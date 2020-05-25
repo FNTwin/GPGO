@@ -15,8 +15,8 @@ def log_gp(X_train, Y_train, lin, mean, var, gp, path=None):
             f.write(str(gp))
 
 
-def log_bo(bayOpt):
-    path = os.path.join(r"C:\Users\Cristian\Desktop\benchmark", str(np.random.randn(1)) + "_test.txt")
+def log_bo(bayOpt, path):
+    path = os.path.join(path, str(np.random.randn(1)) + "_test.txt")
     f = open(path, "w")
     f.write(str(bayOpt))
     f.close()

@@ -4,6 +4,7 @@ from .GaussianProcess.Plotting import plot_BayOpt
 from .GaussianProcess.util import time_log, log_bo
 from scipy.optimize import minimize
 from scipy.stats import norm
+from smt.sampling_methods import LHS
 import time
 
 
@@ -157,12 +158,17 @@ class BayesianOptimization():
             for i in range(1, iteration + 1):
                 print("Iteration: ", i)
                 # Generate dimensional Grid to search
-                search_grid = generate_grid(dim, n_search_points, boundaries, func)
+                if func=="LHS":
+                    sampling = LHS(xlimits=boundaries_array)
+                    search_grid=sampling(n_search_points)
+
+                else:
+                    search_grid = generate_grid(dim, n_search_points, boundaries, func)
 
                 # Generate surrogate model GP and predict the grid values
                 gp.fit()
                 if optimization:
-                    gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=func)
+                    gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
                     print("Optimization: ", i, " completed")
                 mean, var = gp.predict(search_grid)
 
@@ -177,11 +183,16 @@ class BayesianOptimization():
 
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
-                predicted_best_Y = self.compute_new_sample(predicted_best_X)
 
-                # Augment the dataset of the BO and the GP objects
-                self.augment_XY(predicted_best_X, predicted_best_Y)
-                gp.augment_XY(predicted_best_X, predicted_best_Y)
+                if self.get_func() is not None:
+                    predicted_best_Y = self.compute_new_sample(predicted_best_X)
+                    # Augment the dataset of the BO and the GP objects
+                    self.augment_XY(predicted_best_X, predicted_best_Y)
+                    gp.augment_XY(predicted_best_X, predicted_best_Y)
+
+                else:
+                    raise ValueError('Function not defined. If you are running an optimization' +
+                                     ' with an external function use the command bayesian_run_min_single')
 
             best_index = np.argmin(self.get_Y())
             tm.time_end()
@@ -230,13 +241,18 @@ class BayesianOptimization():
             for i in range(1, iteration + 1):
                 print("Iteration: ", i)
                 # Generate dimensional Grid to search
-                search_grid = generate_grid(dim, n_search_points, boundaries, function=func)
+                if func=="LHS":
+                    sampling = LHS(xlimits=boundaries_array)
+                    search_grid = sampling(n_search_points)
+
+                else:
+                    search_grid = generate_grid(dim, n_search_points, boundaries, func)
 
                 # Generate surrogate model GP and predict the grid values
                 gp.fit()
                 if optimization:
                     gp.optimize(constrains=opt_constrain, n_points=n_opt_points,
-                                function=func)
+                                function=np.random.uniform)
                     print("Optimization: ", i, " completed")
                 mean, var = gp.predict(search_grid)
                 print("Surrogate Model generated: ", i)
@@ -277,6 +293,70 @@ class BayesianOptimization():
             plt.legend()
             plt.show()
         return new_prediction, improvement, best
+
+    '#=====================SINGLE MIN/MAX WITH EXTERNAL FUNCTION========================'
+
+    def bayesian_run_single(self, n_search_points,
+                            boundaries,
+                            optimization=False,
+                            minimization=True,
+                            epsilon=0.1,
+                            opt_constrain=[[2, 30], [2, 30]],
+                            n_opt_points=100,
+                            func=np.random.uniform):
+
+        """Devo fare una routine per formarte/leggere i file per il gp e la bo
+        in questo caso carica i dati del gp gia aggiornati da un foglio, sara da mettere una pipeline"""
+        if GP is None:
+            raise ValueError("Gaussian Process not existing. Define one before running a " +
+                             "Bayesian Optimization")
+
+        else:
+            gp = self.get_GP()
+            dim = self.get_dim_inputspace()
+            self.__it = None
+            boundaries_array = np.asarray(boundaries)
+
+            print("Generating surrogate model\n")
+            # Generate dimensional Grid to search
+            if func == "LHS":
+                sampling = LHS(xlimits=boundaries_array)
+                search_grid = sampling(n_search_points)
+
+            else:
+                search_grid = generate_grid(dim, n_search_points, boundaries, func)
+
+            # Generate surrogate model GP and predict the grid values
+            gp.fit()
+            if optimization:
+                gp.optimize(constrains=opt_constrain,
+                            n_points=n_opt_points,
+                            function=np.random.uniform)
+                print("Optimization of the model completed\n")
+
+            mean, var = gp.predict(search_grid)
+            print("Surrogate Model generated\n")
+
+            # Compute the EI and the new theoretical best
+            if minimization:
+                predicted_best_X, improvements, best_value = self.optimization_min(search_grid,
+                                                                                   mean,
+                                                                                   var,
+                                                                                   epsilon,
+                                                                                   plot=False)
+
+            else:
+                predicted_best_X, improvements, best_value = self.optimization_max(search_grid,
+                                                                                   mean,
+                                                                                   var,
+                                                                                   epsilon,
+                                                                                   plot=False)
+            # Check if it is a duplicate
+            predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
+
+            return predicted_best_X
+
+    '#=====================================UTILITIES============================================'
 
     def augment_dataset(self, dataset, new_data):
         try:

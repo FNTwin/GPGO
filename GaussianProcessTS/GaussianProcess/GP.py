@@ -4,6 +4,7 @@ from .Kernel.Kernel import Kernel
 from .Kernel.RBF import RBF
 from .Plotting import plot_BayOpt
 from numba import jit
+from smt.sampling_methods import LHS
 
 class GP():
     """
@@ -209,3 +210,4 @@ def generate_grid(n_dim: int, n_points: int, constrains: list, function=np.linsp
     l = lambda x, y, z: function(x, y, z)
     l_dim = [l(*j, n_points) for i, j in list(zip(range(n_dim), constrains))]
     return np.vstack(np.meshgrid(*l_dim)).reshape(n_dim, -1).T
+
