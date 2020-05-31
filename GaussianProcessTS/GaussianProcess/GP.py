@@ -4,7 +4,7 @@ from .Kernel.Kernel import Kernel
 from .Kernel.RBF import RBF
 from .Plotting import plot_BayOpt
 from numba import jit
-from smt.sampling_methods import LHS
+#from smt.sampling_methods import LHS
 
 class GP():
     """

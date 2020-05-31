@@ -2,9 +2,9 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from .GaussianProcess.GP import GP, generate_grid
-from .GaussianProcess.Kernel.RBF import RBF
-from .Opt import BayesianOptimization
+from GaussianProcess.GP import GP, generate_grid
+from GaussianProcess.Kernel.RBF import RBF
+from Opt import BayesianOptimization
 
 
 def test_GP_1D(optimize=False):
@@ -21,7 +21,7 @@ def test_GP_1D(optimize=False):
     gp = GP(x, y, noise=0.0000005, kernel=RBF(sigma_l=1.0, l=1))
     gp.fit()
 
-    plot = np.linspace(-5, 5, 10000)
+    plot = np.linspace(-5, 5, 1000)
 
     pred_old, var_old = gp.predict(plot[:, None])
 
@@ -105,14 +105,14 @@ def test_minimization_2D():
                      x1 - 6) ** 2 + 10 * (1 - (1 / (8 * np.pi))) * np.cos(x1) + 10)
 
     Z = f(X)[:, None]
-    gp = GP(X, Z, noise=0.01)
+    gp = GP( X, Z, noise=0.01 )
     gp.fit()
-    BayOpt = BayesianOptimization(X, Z, gp, f)
+    BayOpt = BayesianOptimization( X, Z, gp, f )
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
-    best = BayOpt.bayesian_run_min(200,
+    best = BayOpt.bayesian_run_DIRECT(200,
                                    boundaries,
-                                   iteration=10,
-                                   optimization=True,
+                                   iteration=100,
+                                   optimization=False,
                                    epsilon=0.01,
                                    func=np.random.uniform)
 
@@ -133,25 +133,25 @@ def test_minimization_1D():
     dim_out = 1
     n_train_p = 3
 
-    X = np.array([[-2]])
+    X = np.array([[0.1]])
 
     def f(X):
-        return -(X ** 3)
+        return (6* X - 2)**2 * np.sin (12 * X - 4)
 
     Z = f(X)
 
-    gp = GP(X, Z, noise=0.05)
+    gp = GP(X, Z, noise=0.00001)
     gp.fit()
     BayOpt = BayesianOptimization(X, Z, gp, f)
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
     best = BayOpt.bayesian_run_min( 250,
-                                    [[-3, 3]],
+                                    [[0,1]],
                                     iteration=10,
-                                    optimization=True,
+                                    optimization=False,
                                     opt_constrain=[[1, 20], [2, 20]],
                                     epsilon=0.1,
-                                    func="LHS",
-                                    plot=False)
+                                    func=np.linspace,
+                                    plot=True)
 
     print("bay:", best)
 
@@ -188,18 +188,18 @@ def test_Hartmann_6D():
 
     y = hartmann_6D(x)
 
-    gp = GP(x, y, noise=0.05)
+    gp = GP(x, y, noise=0.005)
     gp.fit()
     BayOpt = BayesianOptimization(x, y, gp, hartmann_6D)
 
-    n_p = 2
+    n_p = 10
 
     best = BayOpt.bayesian_run_min(n_p,
                                    [[0, 1] for i in range(6)],
-                                   iteration=3,
-                                   optimization=True,
+                                   iteration=100,
+                                   optimization=False,
                                    epsilon=0.01,
-                                   func="LHS")
+                                   func=np.random.uniform)
 
     print("Number of points sampled in an iteration: ", n_p ** dim)
     print("bay:", best)
@@ -219,6 +219,7 @@ def test_GP_print():
 
 
 a = time.time()
+test_Hartmann_6D()
 print("Finished: ", time.time() - a)
 
 
