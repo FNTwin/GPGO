@@ -7,7 +7,7 @@ from GaussianProcess.Kernel.RBF import RBF
 from Opt import BayesianOptimization
 
 
-def test_GP_1D(optimize=False):
+def test_GP_1D(optimize=True):
     x = np.array([-4, -3, -2, -1, 1])[:, None]
 
     def f(X):
@@ -144,14 +144,13 @@ def test_minimization_1D():
     gp.fit()
     BayOpt = BayesianOptimization(X, Z, gp, f)
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
-    best = BayOpt.bayesian_run_min( 250,
+    best = BayOpt.bayesian_run_DIRECT( 250,
                                     [[0,1]],
                                     iteration=10,
                                     optimization=False,
                                     opt_constrain=[[1, 20], [2, 20]],
                                     epsilon=0.1,
-                                    func=np.linspace,
-                                    plot=True)
+                                    func=np.linspace)
 
     print("bay:", best)
 
@@ -196,7 +195,7 @@ def test_Hartmann_6D():
 
     best = BayOpt.bayesian_run_min(n_p,
                                    [[0, 1] for i in range(6)],
-                                   iteration=100,
+                                   iteration=10,
                                    optimization=False,
                                    epsilon=0.01,
                                    func=np.random.uniform)
@@ -219,7 +218,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_Hartmann_6D()
+
 print("Finished: ", time.time() - a)
 
 

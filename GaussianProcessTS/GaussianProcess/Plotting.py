@@ -56,10 +56,12 @@ def plot_improvement(X_train, Y_train, grid, mean, var, improvement):
     ax[0].fill_between(grid.ravel(), (mean + 2 * var).ravel(), (mean - 2 * var).ravel(),
                        alpha=0.2, color="navy", label="confidence")
 
+
     ax[1].plot(grid, improvement,
                alpha=0.3, color="orange")
     ax[1].fill_between(grid.ravel(), improvement.ravel(), np.full(grid.ravel().shape, 0),
                        color="orange", alpha=0.2, label="EI")
+
     return plt
 
 

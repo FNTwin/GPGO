@@ -3,7 +3,6 @@ from numpy import sum, exp
 from numpy.linalg import norm
 from numpy import ndarray
 import numpy as np
-from numba import jit
 
 class RBF(Kernel):
     """

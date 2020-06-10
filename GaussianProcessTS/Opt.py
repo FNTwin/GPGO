@@ -5,10 +5,11 @@ from GaussianProcess.util import time_log, log_bo
 from scipy.optimize import minimize
 from scipy.stats import norm
 from DIRECT import solve
+import matplotlib.pyplot as plt
 # from smt.sampling_methods import LHS
 import time
 
-
+#Reformat eveything
 class BayesianOptimization():
 
     def __init__(self, X: np.ndarray, Y: np.ndarray, GP=None, func=None, err=1e-6):
@@ -50,18 +51,18 @@ class BayesianOptimization():
 
     '#===================================BAYESIAN DIRECT====================================='
 
-    def optimize(self, f, boundaries, max_iter=10000):
+    def optimize(self, f, boundaries, max_iter=6000):
 
         def DIRECT_wrapper(f):
 
             def g(x, user_data):
 
-                return f(np.array([x])),0
+                return -f(np.array([x])),0
             return g
 
         lb=boundaries[:, 0]
         ub=boundaries[:,1]
-        x, val, _ = solve(DIRECT_wrapper(f), lb, ub, maxf= 30000 ,maxT=max_iter, algmethod=1)
+        x, val, _ = solve(DIRECT_wrapper(f), lb, ub, maxf= 50000 ,maxT=max_iter, algmethod=1)
         print("DIRECT:" ,x, val)
         return x
 
@@ -80,13 +81,13 @@ class BayesianOptimization():
         EI[variance == 0] = 0
         return -EI"""
         def Z(point, mean, variance, epsilon):
-            return (mean - point + epsilon) / variance
+            return (-mean + point + epsilon) / variance
 
         mean, variance = self.get_GP().predict(point)
         point = np.min(self.get_Y())
         epsilon=0.01
 
-        EI = (mean - point + epsilon) * norm.cdf(Z(point, mean, variance, epsilon)) \
+        EI = (-mean + point * epsilon) * norm.cdf(Z(point, mean, variance, epsilon)) \
              + variance * norm.pdf(Z(point, mean, variance, epsilon))
         EI[EI == 0] = 0
         return EI
@@ -241,85 +242,13 @@ class BayesianOptimization():
 
     '#===================================Bayesian MINIMIZE======================================='
 
-    def test_min(self, n_search_points,
-                 boundaries,
-                 minima,
-                 iteration=10,
-                 optimization=False,
-                 epsilon=0.1,
-                 opt_constrain=[[2, 30], [2, 30]],
-                 n_opt_points=100,
-                 func=np.random.uniform,
-                 plot=False):
-
-        if GP is None:
-            raise ValueError("Gaussian Process not existing. Define one before running a " +
-                             "Bayesian Optimization")
-
-        else:
-            gp = self.get_GP()
-            dim = self.get_dim_inputspace()
-            tm = self.get_time_logger()
-            self.__it = iteration
-            boundaries_array = np.asarray(boundaries)
-
-            error = []
-
-            for i in range(1, iteration + 1):
-                print("Iteration: ", i)
-                # Generate dimensional Grid to search
-
-                search_grid = generate_grid(dim, n_search_points, boundaries, func)
-
-                # Generate surrogate model GP and predict the grid values
-                gp.fit()
-                if optimization:
-                    if (i % 5==0 ):
-                        gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
-                        print("Optimization: ", i, " completed")
-                    else:
-                        pass
-                mean, var = gp.predict(search_grid)
-
-                print("Surrogate Model generated: ", i)
-
-                # Compute the EI and the new theoretical best
-                predicted_best_X, improvements, best_value = self.optimization_min(search_grid,
-                                                                                   mean,
-                                                                                   var,
-                                                                                   epsilon,
-                                                                                   plot)
-                tm.time()
-
-                # Check if it is a duplicate
-                print(predicted_best_X)
-                predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
-                print(predicted_best_X)
-
-                if self.get_func() is not None:
-                    predicted_best_Y = self.compute_new_sample(predicted_best_X)
-                    # Augment the dataset of the BO and the GP objects
-                    self.augment_XY(predicted_best_X, predicted_best_Y)
-                    gp.augment_XY(predicted_best_X, predicted_best_Y)
-                    print(np.abs(np.min(self.get_Y()) - minima))
-                    error.append(np.abs(np.min(self.get_Y()) - minima))
-
-                else:
-                    raise ValueError('Function not defined. If you are running an optimization' +
-                                     ' with an external function use the command bayesian_run_min_single')
-
-            best_index = np.argmin(self.get_Y())
-            tm.time_end()
-            # log_bo(self.__str__())
-
-            return error
 
     def bayesian_run_min(self, n_search_points,
                          boundaries,
                          iteration=10,
                          optimization=False,
                          epsilon=0.1,
-                         opt_constrain=[[2, 30], [2, 30]],
+                         opt_constrain=[[0.1, 30], [0.1, 30]],
                          n_opt_points=100,
                          func=np.random.uniform,
                          plot=False):
@@ -358,7 +287,8 @@ class BayesianOptimization():
                 predicted_best_X, improvements, best_value = self.optimization_min(search_grid,
                                                                                    mean,
                                                                                    var,
-                                                                                   epsilon, plot)
+                                                                                   epsilon,
+                                                                                   plot)
                 tm.time()
 
                 # Check if it is a duplicate
@@ -480,8 +410,8 @@ class BayesianOptimization():
                             boundaries,
                             optimization=False,
                             minimization=True,
-                            epsilon=0.1,
-                            opt_constrain=[[2, 30], [2, 30]],
+                            epsilon=0.01,
+                            opt_constrain=[[1, 30], [1, 30]],
                             n_opt_points=100,
                             func=np.random.uniform):
 
@@ -535,6 +465,52 @@ class BayesianOptimization():
             predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
 
             return predicted_best_X
+
+    def bayesian_run_single_DIRECT(self, n_search_points,
+                            boundaries,
+                            optimization=False,
+                            epsilon=0.01,
+                            opt_constrain=[[1, 30], [1, 30]],
+                            n_opt_points=100,
+                            func=np.random.uniform):
+        if GP is None:
+            raise ValueError("Gaussian Process not existing. Define one before running a " +
+                             "Bayesian Optimization")
+
+        else:
+            gp = self.get_GP()
+            dim = self.get_dim_inputspace()
+            self.__it = None
+            boundaries_array = np.asarray(boundaries)
+
+            print("Generating surrogate model\n")
+            # Generate dimensional Grid to search
+            if func == "LHS":
+                sampling = LHS(xlimits=boundaries_array)
+                search_grid = sampling(n_search_points)
+
+            else:
+                search_grid = generate_grid(dim, n_search_points, boundaries, func)
+
+            # Generate surrogate model GP and predict the grid values
+            if optimization:
+                gp.optimize(constrains=opt_constrain,
+                            n_points=n_opt_points,
+                            function=np.random.uniform)
+                print("Optimization of the model completed\n")
+
+            gp.fit()
+
+            #mean, var = gp.predict(search_grid)
+            print("Surrogate Model generated\n")
+
+            predicted_best_X = self.DIRECT_new_sample_loc(boundaries_array, search_grid, epsilon)
+
+            # Check if it is a duplicate
+            predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
+
+            return predicted_best_X
+
 
     '#=====================================UTILITIES============================================'
 
@@ -608,6 +584,195 @@ class BayesianOptimization():
             datanew += f'{count}\t{X[i]}\t{Y[i]}\n'
 
         return header + old_data + time + datanew + header
+
+    '#=================================TEST ROUTINES============================================'
+
+    @staticmethod
+    def test_long(x,y,f, n_search_points,
+                 boundaries,
+                 iter,
+                 minima,
+                 opt=False):
+
+        gp_EI = GP(x, y, noise=2e-5)
+        gp_EI.fit()
+        gp_DIRECT=GP(x, y,noise=2e-5)
+        gp_DIRECT.fit()
+        BayOpt_EI = BayesianOptimization(x, y, gp_EI, f, err=1e-3)
+        BayOpt_DIRECT= BayesianOptimization(x, y, gp_DIRECT, f, err=1e-3)
+
+        # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
+        """err, val = BayOpt_EI.test_min(n_search_points,
+                 boundaries,
+                 minima,
+                 iteration=iter,
+                 optimization=opt,
+                 epsilon=0.01,
+                 opt_constrain=[[0.5, 30], [0.5, 30]],
+                 n_opt_points=100,
+                 func=np.random.uniform,
+                 plot=False)
+
+        print(val[-1])"""
+
+        err_DIRECT, val_DIRECT=BayOpt_DIRECT.direct_test(n_search_points,
+                 boundaries,
+                 minima,
+                 iteration=iter,
+                 optimization=opt,
+                 epsilon=0.01,
+                 opt_constrain=[[2, 30], [2, 30]],
+                 n_opt_points=100,
+                 func=np.random.uniform,
+                 plot=False)
+
+        plt.scatter(np.arange(0, iter, 1), val_DIRECT, marker="o", color="orange", label="DIRECT")
+        plt.plot(np.arange(0, iter, 1), np.full(iter, minima), color="black", linestyle="--", label="Minima")
+        #plt.scatter(np.arange(0, iter, 1), val, marker="o", color="red",  label="EI")
+        plt.xlabel("Iteration")
+        plt.ylabel("Function value")
+        plt.legend()
+        plt.show()
+
+    def direct_test(self,n_search_points,
+                 boundaries,
+                 minima,
+                 iteration=10,
+                 optimization=False,
+                 epsilon=0.1,
+                 opt_constrain=[[2, 30], [2, 30]],
+                 n_opt_points=100,
+                 func=np.random.uniform,
+                 plot=False):
+        if GP is None:
+            raise ValueError("Gaussian Process not existing. Define one before running a " +
+                             "Bayesian Optimization")
+
+        else:
+            gp = self.get_GP()
+            dim = self.get_dim_inputspace()
+            tm = self.get_time_logger()
+            self.__it = iteration
+            boundaries_array = np.asarray(boundaries)
+
+            error = []
+            val = []
+
+            for i in range(1, iteration + 1):
+                print("Iteration: ", i)
+
+                search_grid = generate_grid(dim, n_search_points, boundaries, function=func)
+
+                if optimization:
+                    gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=func)
+                    print("Optimization: ", i, " completed")
+                gp.fit()
+
+                predicted_best_X = self.DIRECT_new_sample_loc(boundaries_array, search_grid, epsilon)
+
+                # Check if it is a duplicate
+                predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
+                print("COMPUTING:", predicted_best_X)
+                predicted_best_Y = self.compute_new_sample(predicted_best_X)
+
+                print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
+
+                # Augment the dataset of the BO and the GP objects
+                self.augment_XY(predicted_best_X, predicted_best_Y)
+                gp.augment_XY(predicted_best_X, predicted_best_Y)
+                error.append(np.abs(np.min(self.get_Y()) - minima))
+                val.append(np.min(self.get_Y()))
+
+            """plt.scatter(np.arange(0, iteration, 1), val, marker="o", color="orange", label="DIRECT")
+            plt.plot(np.arange(0, iteration, 1), np.full(iteration, minima), color="black", label="Minima")
+            plt.xlabel("Iteration")
+            plt.ylabel("Function value")
+            plt.legend()
+            plt.show()"""
+
+            return error, val
+
+
+
+    def test_min(self, n_search_points,
+                 boundaries,
+                 minima,
+                 iteration=10,
+                 optimization=False,
+                 epsilon=0.1,
+                 opt_constrain=[[2, 30], [2, 30]],
+                 n_opt_points=100,
+                 func=np.random.uniform,
+                 plot=False):
+
+        if GP is None:
+            raise ValueError("Gaussian Process not existing. Define one before running a " +
+                             "Bayesian Optimization")
+
+        else:
+            gp = self.get_GP()
+            dim = self.get_dim_inputspace()
+            tm = self.get_time_logger()
+            self.__it = iteration
+            boundaries_array = np.asarray(boundaries)
+
+            error = []
+            val = []
+
+            for i in range(1, iteration + 1):
+                print("Iteration: ", i)
+                # Generate dimensional Grid to search
+
+                search_grid = generate_grid(dim, n_search_points, boundaries, func)
+
+                # Generate surrogate model GP and predict the grid values
+                gp.fit()
+                if optimization:
+                    if (i % 5 == 0):
+                        gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
+                        print("Optimization: ", i, " completed")
+                    else:
+                        pass
+                mean, var = gp.predict(search_grid)
+
+                print("Surrogate Model generated: ", i)
+
+                # Compute the EI and the new theoretical best
+                predicted_best_X, improvements, best_value = self.optimization_min(search_grid,
+                                                                                   mean,
+                                                                                   var,
+                                                                                   epsilon,
+                                                                                   plot)
+                tm.time()
+
+                # Check if it is a duplicate
+
+                predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
+
+                if self.get_func() is not None:
+                    predicted_best_Y = self.compute_new_sample(predicted_best_X)
+                    # Augment the dataset of the BO and the GP objects
+                    self.augment_XY(predicted_best_X, predicted_best_Y)
+                    gp.augment_XY(predicted_best_X, predicted_best_Y)
+                    error.append(np.abs(np.min(self.get_Y()) - minima))
+                    val.append(np.min(self.get_Y()))
+
+                else:
+                    raise ValueError('Function not defined. If you are running an optimization' +
+                                     ' with an external function use the command bayesian_run_min_single')
+
+            best_index = np.argmin(self.get_Y())
+            tm.time_end()
+            # log_bo(self.__str__())
+
+            """plt.scatter(np.arange(0, iteration, 1), val, marker="o", color="red", label="EI")
+            plt.plot(np.arange(0, iteration, 1), np.full(iteration, minima), color="black", label="Minima")
+            plt.xlabel("Iteration")
+            plt.ylabel("Function value")
+            plt.legend()
+            plt.show()"""
+
+            return error, val
 
 
 def Expected_Improvement_max(new_point, mean, variance, epsilon):

@@ -3,7 +3,7 @@ from scipy.linalg import solve
 from .Kernel.Kernel import Kernel
 from .Kernel.RBF import RBF
 from .Plotting import plot_BayOpt
-from numba import jit
+
 #from smt.sampling_methods import LHS
 
 class GP():
@@ -92,12 +92,12 @@ class GP():
         ker = self.get_kernel()
         K_sample = ker.kernel_product(self.get_X(), X)
         inv_cov = np.linalg.solve(self.get_cov(), K_sample)
+        #Write general case
         # cov_sample = ker.kernel_product(X,X)
         # var = np.diag(cov_sample) - np.sum(inv_cov ** 2, axis=0)
         # var = ker.gethyper()[0]**2 - np.sum(inv_cov ** 2, axis=0)
-        var =  ker.gethyper()[0] ** 2 - np.sum(inv_cov ** 2, axis=0)
-        return np.dot(inv_cov.T, np.linalg.solve(self.get_cov(),self.get_Y()),), 2 * np.sqrt(var)[:, None]
-        return mean, np.sqrt(var)
+        var =  ker.gethyper()[0] ** 2 + self.get_noise()**2 - np.sum(inv_cov ** 2, axis=0)
+        return np.dot(inv_cov.T, np.linalg.solve(self.get_cov(),self.get_Y())), 2 * np.sqrt(var)[:, None]
 
 
     def plot(self, X):
