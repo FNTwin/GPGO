@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 from scipy.stats import norm
 from DIRECT import solve
 import matplotlib.pyplot as plt
-# from smt.sampling_methods import LHS
+from smt.sampling_methods import LHS
 import time
 
 #Reformat eveything
@@ -51,7 +51,7 @@ class BayesianOptimization():
 
     '#===================================BAYESIAN DIRECT====================================='
 
-    def optimize(self, f, boundaries, max_iter=6000):
+    def optimize(self, f, boundaries, max_iter=10000):
 
         def DIRECT_wrapper(f):
 
@@ -62,7 +62,7 @@ class BayesianOptimization():
 
         lb=boundaries[:, 0]
         ub=boundaries[:,1]
-        x, val, _ = solve(DIRECT_wrapper(f), lb, ub, maxf= 50000 ,maxT=max_iter, algmethod=1)
+        x, val, _ = solve(DIRECT_wrapper(f), lb, ub, maxf= 80000 ,maxT=max_iter, algmethod=1)
         print("DIRECT:" ,x, val)
         return x
 
@@ -435,6 +435,7 @@ class BayesianOptimization():
 
             else:
                 search_grid = generate_grid(dim, n_search_points, boundaries, func)
+                #search_grid=np.random.uniform(lwb,upb,(5000000,13))
 
             # Generate surrogate model GP and predict the grid values
             gp.fit()
@@ -491,6 +492,7 @@ class BayesianOptimization():
 
             else:
                 search_grid = generate_grid(dim, n_search_points, boundaries, func)
+
 
             # Generate surrogate model GP and predict the grid values
             if optimization:

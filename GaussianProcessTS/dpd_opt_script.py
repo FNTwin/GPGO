@@ -2,41 +2,11 @@ from GaussianProcessTS.GaussianProcess.GP import GP, generate_grid
 from GaussianProcessTS.GaussianProcess.Kernel.RBF import RBF
 from GaussianProcessTS.Opt import BayesianOptimization
 import numpy as np
-import argparse
 import os
-
-
-def parse_cmd():
-    """
-    Function that parse the input from command line.
-    Read three flags: -f , -o, -c
-    -f: path to the input file [Required]
-    -o: Path to the output file [Optional]
-    Output: args object containing the input path, the outputh path and the dictionary of the charges
-    """
-
-    parser = argparse.ArgumentParser(description="Various path from bash")
-
-    parser.add_argument('-f', '--file', dest='file',
-                        action='store', type=str, help="Path to input fie")
-
-    parser.add_argument('-o', '--out', dest='out',
-                        nargs='?', action='store', type=str, help="Path to store the output file")
-
-    parser.add_argument('-x', '--x', dest='path_x',
-                        action='store', type=str, help="Path to database X")
-
-    parser.add_argument('-y', '--y', dest='path_y',
-                        action='store', type=str, help="Path to database Y")
-
-
-    args = parser.parse_args()
-
-    return args
+import argparse
 
 def get_right_coeffs(array):
     truth_index=[2,3,6,7,9,15,16,19,20,21,24,25,30]
-    print("TEST:",array)
     return np.atleast_2d(np.squeeze(array)[truth_index])
 
 
@@ -57,8 +27,8 @@ def read_interaction(path):
         coeffs=[]
         for row in f:
             a=row.split()
-            if "pair_coeff" in a:
-                coeffs.append(float(a[4]))
+            if "pair_coeffs" in a:
+                coeffs.append(float(a[3]))
         return np.atleast_2d(coeffs)
 
 def write_interaction(path, array):
@@ -103,65 +73,67 @@ def write_db(path, array):
 def read_db(path):
     return np.atleast_2d(np.loadtxt(path))
 
-def process_info_rdf(a1,a2):
-    """Load RDF file, process it, write_db for y"""
+def parse_cmd():
 
-    loss= np.linalg.norm
-    pass
+	"""
+	Function that parse the input from command line.
+	Read three flags: -f , -o, -c
+	-f: path to the input file [Required]
+	-o: Path to the output file [Optional]
+	Output: args object containing the input path, the outputh path and the dictionary of the charges
+	"""
 
-def standardize(X):
-    mean = np.mean(X)
-    std=np.std(X)
-    new = (X-mean)/std
-    return np.atleast_2d(new), mean, std
+	parser=argparse.ArgumentParser(description="Prepare the lammps pair coeffs")
+
+	parser.add_argument('-f', '--file', dest='file' ,
+	 action='store', type=str, help="Path to input fie")
+
+
+	args=parser.parse_args()
+
+	return args
 
 def main():
-
-    args = parse_cmd()
-    path_interaction, path_out , path_x, path_y = args.file, args.out, args.path_x, args.path_y
+    args=parse_cmd()
+    path_interaction=args.file
     #Write X and Y
-    X_old = get_right_coeffs(read_interaction(path_interaction))
-    write_db(path_x, X_old)
-    write_db(path_y, new_Y)
+    #X_old=get_right_coeffs(read_interaction(path_interaction))
+    path_x="/home/merk/Desktop/optimization_run/data_X.txt"
+    path_y="/home/merk/Desktop/optimization_run/data_Y.txt"
 
 
-    X,Y=read_db(path_x), np.atleast_2d(read_db(path_y))
-    X , mean , var = standardize(X)
-    mu,std=np.atleast_2d(np.mean(X)),np.atleast_2d(np.std(X))
-    print(X)
-    print(Y)
+    X,Y=read_db(path_x), read_db(path_y).reshape(-1,1)
+    print(X.shape)
+    tmp=[]
+    for i in X:
+        tmp.append(get_right_coeffs(i))
+    X=np.asarray(np.squeeze(tmp))
     #bo run
-    low_b, upp_b= (-10-mean)/std, (140-mean)/std
-    boundaries=[[low_b,upp_b] for i in range(X.shape[1])]
-
-    gp = GP(X, Y, noise=2e-5)
+    mean, var=np.mean(X), np.std(X)
+    X= (X - mean)/var
+    low, up =(-10-mean)/var , (140 - mean)/var
+    boundaries=[[low,up] for i in range(13)]
+    gp = GP(X, Y, noise=2e-2)
     gp.fit()
 
     bayesian_optimizer=BayesianOptimization(X,Y,gp, err=1e-3)
+    proposal=bayesian_optimizer.bayesian_run_single(4500000,
+                                                    boundaries,
+                                                    optimization=True,
+                                                    minimization=True,
+                                                    epsilon=0.01,
+                                                    opt_constrain=[[0.2, 20], [0.2, 20]],
+                                                    n_opt_points=200,
+                                                    func="LHS")
 
-    proposal=bayesian_optimizer.bayesian_run_single_DIRECT(3,
-                                                           boundaries,
-                                                           optimization=False,
-                                                           epsilon=0.01,
-                                                           opt_constrain=[[1, 30], [1, 30]],
-                                                           n_opt_points=200,
-                                                           func=np.random.uniform)
-
-    proposal= proposal*var + mean
 
     #Write new file
-    write_interaction(path_out, fill_spots(proposal))
+    proposal= proposal *var + mean
 
-
-#write_interaction("/home/merk/Desktop/", np.random.randint(0,90,size=len(bounds_index)))
-#i file test.txt e test_y devono essere gia creati
-
-
-
-"""main("/Users/gab/Desktop/simu_Linux_files/",
-     "/Users/gab/Desktop/test.txt",
-     "/Users/gab/Desktop/test_y.txt")
-"""
+    print(proposal)
+    write_interaction(path_interaction, fill_spots(proposal))
 
 if __name__=="__main__":
-	main()
+    main()
+
+
