@@ -97,6 +97,8 @@ class GP():
         # var = np.diag(cov_sample) - np.sum(inv_cov ** 2, axis=0)
         # var = ker.gethyper()[0]**2 - np.sum(inv_cov ** 2, axis=0)
         var =  ker.gethyper()[0] ** 2 + self.get_noise()**2 - np.sum(inv_cov ** 2, axis=0)
+        var_neg= var < 0
+        var[var_neg]=0.
         return np.dot(inv_cov.T, np.linalg.solve(self.get_cov(),self.get_Y())), 2 * np.sqrt(var)[:, None]
 
 

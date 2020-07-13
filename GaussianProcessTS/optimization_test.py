@@ -67,12 +67,20 @@ def min_6D():
 
     y = f(x)
 
-    """gp = GP(x, y, noise=0.01)
+    gp = GP(x, y, noise=0.0002, kernel=RBF(sigma_l=0.7,l=0.52))
     gp.fit()
-    BayOpt = BayesianOptimization(x,y, gp, f, err=1e-2)
+    BayOpt = BayesianOptimization(x,y, gp, f, err=1e-4)
+    best=BayOpt.bayesian_run_BFGL(n_search_points=10,
+                                  iteration=80,
+                                  boundaries=[[0,1] for i in range(6)],
+                                  minimization=True)
+
+
+    print(best)
+
 
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
-    err = BayOpt.direct_test(10,
+    """err = BayOpt.direct_test(10,
                           [[0, 1] for i in range(6)],
                           minima=-3.32237,
                           iteration=100,
@@ -80,8 +88,8 @@ def min_6D():
                           epsilon=0.01,
                           func=np.random.uniform)"""
     #print("BEST", err)
-    BayesianOptimization.test_long(x=x, y=y, f=f, n_search_points=6, boundaries=[[0, 1] for i in range(6)]
-                                   , iter=100, minima=-3.32237, opt=False)
+    #BayesianOptimization.test_long(x=x, y=y, f=f, n_search_points=6, boundaries=[[0, 1] for i in range(6)]
+                                 #  , iter=100, minima=-3.32237, opt=False)
 
 def one_run_test():
 
@@ -105,6 +113,8 @@ def test_minimization_1D():
     dim_test = 1
     dim_out = 1
     n_train_p = 3
+
+    np.random.seed(1)
 
     X = np.random.uniform(0,1,3)[:,None]
 
@@ -156,7 +166,7 @@ def test_GP_2D(optimize=True, function=np.linspace):
         print("New marg likelihood :", gp.get_marg(),
               "\n Hyperparameters: ", gp.get_kernel().gethyper())
 
-def test_GP_1D(optimize=True):
+def test_GP_1D(optimize=False):
     x = np.array([ -1,0.5, 1, 3])[:, None]
 
     def f(X):
@@ -167,13 +177,13 @@ def test_GP_1D(optimize=True):
 
     y = noise(x, alpha=0)
 
-    gp = GP(x, y, noise=0.0000005, kernel=RBF(sigma_l=2.0, l=1.2))
+    gp = GP(x, y, noise=0.0002, kernel=RBF(sigma_l=0.5135, l=1.26))
     gp.fit()
 
     plot = np.linspace(-1.5, 3.5, 1000)
 
     pred_old, var_old = gp.predict(plot[:, None])
-    plt.plot(plot[:,None],f(plot), color="saddlebrown", linestyle="-.", label="True Function")
+    #plt.plot(plot[:,None],f(plot), color="saddlebrown", linestyle="-.", label="True Function")
     gp.plot(plot[:, None])
 
 
@@ -181,11 +191,11 @@ def test_GP_1D(optimize=True):
     print("Old marg likelihood :", gp.get_marg(), "\n Hyperparameters: ",
           gp.get_kernel().gethyper())
     if optimize:
-        new = gp.grid_search_optimization(constrains=[[1, 30], [1, 30]],
-                                          n_points=300,
+        new = gp.grid_search_optimization(constrains=[[0.2, 3], [0.2, 3]],
+                                          n_points=500,
                                           function=np.random.uniform)
 
-        optimized = GP(x, y, noise=0.1, kernel=RBF(sigma_l=new["hyper"][0], l=new["hyper"][1]))
+        optimized = GP(x, y, noise=0.000005, kernel=RBF(sigma_l=new["hyper"][0], l=new["hyper"][1]))
         optimized.fit()
         pred, var = optimized.predict(plot[:, None])
 
@@ -195,4 +205,4 @@ def test_GP_1D(optimize=True):
               "\n Hyperparameters: ", optimized.get_kernel().gethyper())
 
 
-test_GP_2D(True)
+min_6D()

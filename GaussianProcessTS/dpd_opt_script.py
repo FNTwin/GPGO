@@ -6,17 +6,24 @@ import os
 import argparse
 
 def get_right_coeffs(array):
-    truth_index=[2,3,6,7,9,15,16,19,20,21,24,25,30]
+    #truth_index=[2,3,6,7,9,15,16,19,20,21,24,25,30]
+    truth_index = [2, 6, 7, 9, 15, 19, 20, 30]
+
     return np.atleast_2d(np.squeeze(array)[truth_index])
 
 
 def fill_spots(array):
-    truth_index = [2, 3, 6, 7, 9, 15, 16, 19, 20, 21, 24, 25, 30]
+    #truth_index = [2, 3, 6, 7, 9, 15, 16, 19, 20, 21, 24, 25, 30]
+    truth_index = [2, 6, 7, 9, 15, 19, 20, 30]
+
     copy_to = [4, 10, 11, 13, 14, 17, 22, 26, 28, 29]
     copy_from = [2, 3, 2, 6, 7, 15, 16, 15, 19, 20]
     coeffs=np.zeros(36)
     coeffs[truth_index]=np.squeeze(array)
+    N=[3, 16, 21, 24, 25]
+    coeffs[N]= np.array([127.19, 2.51, -4.3, 124.4, 4.5])
     coeffs[copy_to] = coeffs[copy_from]
+
     return np.atleast_2d(coeffs)
 
 
@@ -49,10 +56,17 @@ def write_interaction(path, array):
                     "7\t7", "7\t8",
                     "8\t8"]
 
-    bound_mask=[0,1,5,8,12,18,23,27,31,32,33,34,35]
-    mask_value=[51.6, 51.6, -10., 51.6 , 40., 72.,68.9,72., 80.,80.,51.6,51.6, 51.6]
+    #bound_mask=[0,1,5,8,12,18,23,27,31,32,33,34,35]
+    #mask_value=[51.6, 51.6, -10., 51.6 , 40., 72.,68.9,72., 80.,80.,51.6,51.6, 51.6]
+    #N beads fixed
+    #bound_mask=[0, 1, 3, 5, 8, 12, 16, 18, 21, 23,24,25 ,27,31,32,33,34,35]
+    #mask_value=[51.6, 51.6, 127.19, -10., 51.6 , 40.,2.5, 72.,-4.3,68.9,124.4,4.53,72., 80.,80.,51.6,51.6, 51.6]
+
+    bound_mask=[0, 1, 3, 5, 8, 12, 16, 18, 21, 23,24,25 ,27,31,32,33,34,35]
+    mask_value=[51.6, 51.6, 127.19, -10., 51.6 , 40.,2.5, 72.,-4.3,68.9,124.4,4.53,72., 80.,80.,51.6,51.6, 51.6]
     n_bounds=36
-    n_real_bounds=13
+    #n_real_bounds=13
+    n_real_bounds=8
     array=np.squeeze(array)
 
     "write an interaction file in path"
@@ -103,32 +117,34 @@ def main():
 
 
     X,Y=read_db(path_x), read_db(path_y).reshape(-1,1)
+    dim=X[0].shape[0]
     print(X.shape)
     tmp=[]
     for i in X:
         tmp.append(get_right_coeffs(i))
     X=np.asarray(np.squeeze(tmp))
+    print(X.shape)
     #bo run
-    mean, var=np.mean(X), np.std(X)
-    X= (X - mean)/var
-    low, up =(-10-mean)/var , (140 - mean)/var
-    boundaries=[[low,up] for i in range(13)]
+    #mean, var=np.mean(X), np.std(X)
+    #X= (X - mean)/var
+    #low, up =(-10-mean)/var , (140 - mean)/var
+    boundaries=[[-10,140] for i in range(dim)]
     gp = GP(X, Y, noise=2e-2)
     gp.fit()
 
     bayesian_optimizer=BayesianOptimization(X,Y,gp, err=1e-3)
-    proposal=bayesian_optimizer.bayesian_run_single(4500000,
+    proposal=bayesian_optimizer.bayesian_run_single(4000000,
                                                     boundaries,
-                                                    optimization=True,
+                                                    optimization=False,
                                                     minimization=True,
                                                     epsilon=0.01,
-                                                    opt_constrain=[[0.2, 20], [0.2, 20]],
-                                                    n_opt_points=200,
+                                                    opt_constrain=[[0.2, 200], [0.2, 200]],
+                                                    n_opt_points=450,
                                                     func="LHS")
 
 
     #Write new file
-    proposal= proposal *var + mean
+    #proposal= proposal *var + mean
 
     print(proposal)
     write_interaction(path_interaction, fill_spots(proposal))

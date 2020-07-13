@@ -2,7 +2,7 @@ import numpy as np
 from GaussianProcess.GP import GP, generate_grid
 from GaussianProcess.Plotting import plot_BayOpt
 from GaussianProcess.util import time_log, log_bo
-from scipy.optimize import minimize
+from scipy.optimize import minimize, fmin_l_bfgs_b
 from scipy.stats import norm
 from DIRECT import solve
 import matplotlib.pyplot as plt
@@ -103,7 +103,7 @@ class BayesianOptimization():
                             iteration=20,
                             minimization=True,
                             optimization=False,
-                            epsilon=0.1,
+                            epsilon=0.01,
                             opt_constrain=[[2, 30], [2, 30]],
                             n_opt_points=100,
                             func=np.random.uniform):
@@ -157,7 +157,7 @@ class BayesianOptimization():
                           iteration=10,
                           minimization=True,
                           optimization=False,
-                          epsilon=0.1,
+                          epsilon=0.01,
                           opt_constrain=[[2, 30], [2, 30]],
                           n_opt_points=100,
                           func=np.random.uniform):
@@ -205,19 +205,19 @@ class BayesianOptimization():
 
     def Expected_improment(self, new_points, max, gp, epsilon):
         def Z(point, mean, variance, epsilon):
-            return (-mean + point - epsilon) / variance
+            return (-mean + point + epsilon) / variance
 
         mean, variance = gp.predict(new_points)
         point = max
 
-        EI = (-mean + point - epsilon) * norm.cdf(Z(point, mean, variance, epsilon)) \
+        EI = (-mean + point + epsilon) * norm.cdf(Z(point, mean, variance, epsilon)) \
              + variance * norm.pdf(Z(point, mean, variance, epsilon))
         EI[EI == 0] = 0
         return EI
 
     def propose_new_sample_loc(self, EI_func, gp, boundaries, n_search_points, epsilon):
         dim = self.get_dim_inputspace()
-        min_val = 1
+        min_val = None
         max = np.min(self.get_Y())
 
         """def min_objective(X, max, gp, epsilon):
@@ -229,7 +229,8 @@ class BayesianOptimization():
         for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1], size=(100, dim)):
 
             res = minimize(lambda X: -EI_func(X.reshape(-1, dim), max=max, gp=gp, epsilon=epsilon),
-                           x0=i, bounds=boundaries, method='L-BFGS-B')
+                           x0=i, bounds=boundaries, method='L-BFGS-B' )
+
 
             if not res.success:
                 continue
@@ -408,6 +409,7 @@ class BayesianOptimization():
 
     def bayesian_run_single(self, n_search_points,
                             boundaries,
+
                             optimization=False,
                             minimization=True,
                             epsilon=0.01,
@@ -434,8 +436,8 @@ class BayesianOptimization():
                 search_grid = sampling(n_search_points)
 
             else:
-                search_grid = generate_grid(dim, n_search_points, boundaries, func)
-                #search_grid=np.random.uniform(lwb,upb,(5000000,13))
+                #search_grid = generate_grid(dim, n_search_points, boundaries, func)
+                search_grid=np.random.uniform(-10,140,(n_search_points,dim))
 
             # Generate surrogate model GP and predict the grid values
             gp.fit()
