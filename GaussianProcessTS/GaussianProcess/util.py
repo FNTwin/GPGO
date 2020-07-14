@@ -42,15 +42,25 @@ class time_log():
         self.intervall.append(t - self.intervall[self.count])
         self.count += 1
 
-    def time_end(self, t=tm.time()):
-        self.time(t=t)
-        self.end = t
+    def time_end(self):
+        fin=tm.time()
+        self.time(t=fin)
+        self.end = fin
 
     def total(self):
         if self.end is None:
-            self.time_end(tm.time())
+            self.time_end()
         return str(self.end - self.start)
 
     def __str__(self):
         start = f'{str(self.end - self.start)}\n'
         return start
+
+class Observer():
+    def __init__(self,type_opt, it):
+        self.type=type_opt
+        self.iterations=it
+        self.best={}
+
+
+

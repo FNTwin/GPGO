@@ -20,7 +20,6 @@ class BayesianOptimization():
         self.__Y = Y
         self.__GP = GP
         self.__func = func
-        #self.__optimizer=optimizer
         self.__err = err
         self.__it = None
         self.__time = time_log()
@@ -104,7 +103,7 @@ class BayesianOptimization():
                             minimization=True,
                             optimization=False,
                             epsilon=0.01,
-                            opt_constrain=[[2, 30], [2, 30]],
+                            opt_constrain=[[2, 30], [2, 30], [1e-4,2]],
                             n_opt_points=100,
                             func=np.random.uniform):
 
@@ -158,7 +157,7 @@ class BayesianOptimization():
                           minimization=True,
                           optimization=False,
                           epsilon=0.01,
-                          opt_constrain=[[2, 30], [2, 30]],
+                          opt_constrain=[[2, 30], [2, 30], [1e-4,2]],
                           n_opt_points=100,
                           func=np.random.uniform):
 
@@ -179,7 +178,7 @@ class BayesianOptimization():
                 # Generate surrogate model GP and predict the grid values
                 gp.fit()
                 if optimization:
-                    gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=func)
+                    gp.opt()
                     print("Optimization: ", i, " completed")
 
                 # Compute the EI and the new theoretical best
@@ -226,7 +225,7 @@ class BayesianOptimization():
         improvement = EI_func(n_search_points, max, gp, epsilon)
         min_x = None
 
-        for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1], size=(100, dim)):
+        for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1], size=(10, dim)):
 
             res = minimize(lambda X: -EI_func(X.reshape(-1, dim), max=max, gp=gp, epsilon=epsilon),
                            x0=i, bounds=boundaries, method='L-BFGS-B' )
@@ -249,7 +248,7 @@ class BayesianOptimization():
                          iteration=10,
                          optimization=False,
                          epsilon=0.1,
-                         opt_constrain=[[0.1, 30], [0.1, 30]],
+                         n_restart=50,
                          n_opt_points=100,
                          func=np.random.uniform,
                          plot=False):
@@ -278,8 +277,10 @@ class BayesianOptimization():
                 # Generate surrogate model GP and predict the grid values
                 gp.fit()
                 if optimization:
-                    gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
+                    #gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
+                    gp.opt(n_restarts=n_restart)
                     print("Optimization: ", i, " completed")
+
                 mean, var = gp.predict(search_grid)
 
                 print("Surrogate Model generated: ", i)
@@ -308,6 +309,7 @@ class BayesianOptimization():
             best_index = np.argmin(self.get_Y())
             tm.time_end()
             # log_bo(self.__str__())
+            print("TIME:",tm)
 
             return self.get_X()[best_index], self.get_Y()[best_index]
 
@@ -333,7 +335,7 @@ class BayesianOptimization():
                          iteration=10,
                          optimization=False,
                          epsilon=0.1,
-                         opt_constrain=[[2, 30], [2, 30]],
+                         opt_constrain=[[2, 30], [2, 30], [1e-4,2]],
                          n_opt_points=100,
                          func=np.random.uniform,
                          plot=False):
@@ -413,7 +415,7 @@ class BayesianOptimization():
                             optimization=False,
                             minimization=True,
                             epsilon=0.01,
-                            opt_constrain=[[1, 30], [1, 30]],
+                            opt_constrain=[[1, 30], [1, 30], [1e-4,2]],
                             n_opt_points=100,
                             func=np.random.uniform):
 
@@ -473,7 +475,7 @@ class BayesianOptimization():
                             boundaries,
                             optimization=False,
                             epsilon=0.01,
-                            opt_constrain=[[1, 30], [1, 30]],
+                            opt_constrain=[[1, 30], [1, 30], [1e-4,2]],
                             n_opt_points=100,
                             func=np.random.uniform):
         if GP is None:

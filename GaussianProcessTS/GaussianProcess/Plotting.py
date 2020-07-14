@@ -4,6 +4,7 @@ from mpl_toolkits import mplot3d
 
 
 def plot_GP_1D(X_train, Y_train, lin, mean, var):
+    """Function to plot a GP 1-D Object"""
     plt.scatter(X_train, Y_train,
                 color="red", marker="x", label="Train")
 
