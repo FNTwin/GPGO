@@ -70,7 +70,7 @@ def min_6D():
     gp = GP(x, y, noise=0.0002, kernel=RBF(sigma_l=0.7,l=0.52))
     gp.fit()
     BayOpt = BayesianOptimization(x,y, gp, f, err=1e-4)
-    best=BayOpt.bayesian_run_BFGL(n_search_points=10,
+    best=BayOpt.bayesian_run_BFGL(n_search=10,
                                   iteration=80,
                                   boundaries=[[0,1] for i in range(6)],
                                   minimization=True)
@@ -101,13 +101,13 @@ def one_run_test():
 
 
     print(BayOpt.bayesian_run_min(200,
-                        [[-3,3]],
-                        optimization=False,
-                        minimization=True,
-                        epsilon=0.1,
-                        opt_constrain=[[2, 30], [2, 30]],
-                        n_opt_points=100,
-                        func=np.random.uniform))
+                                  [[-3,3]],
+                                  optimization=False,
+                                  minimization=True,
+                                  epsilon=0.1,
+                                  opt_constrain=[[2, 30], [2, 30]],
+                                  n_opt_points=100,
+                                  sampling=np.random.uniform))
 
 def test_minimization_1D():
     dim_test = 1

@@ -112,25 +112,29 @@ def test_minimization_2D():
     Z = f(X)[:, None]
     gp = GP( X, Z)
     gp.fit()
-    BayOpt = BayesianOptimization( X, Z, gp, f )
-    # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
-    best = BayOpt.bayesian_run_min(200,
-                                   boundaries,
-                                   iteration=50,
-                                   optimization=False,
-                                   epsilon=0.01,
-                                   func=np.random.uniform)
+    settings = {"type": "BFGL",
+                "n_search": 15,
+                "boundaries": boundaries,
+                "epsilon": 0.01,
+                "iteration": 30,
+                "minimization": True,
+                "optimization": True,
+                "n_restart": 5,
+                "sampling": np.random.uniform}
+
+    BayOpt = BayesianOptimization(X,Z, settings, gp, f)
+    best=BayOpt.run()
 
     print("bay:", best)
 
     # plot = generate_grid(dim_test, 30, [[-5, 5] for i in range(dim_test)])
-    plot = generate_grid(dim_test, 30, boundaries, np.linspace)
+    """plot = generate_grid(dim_test, 30, boundaries, np.linspace)
     ax = plt.axes(projection='3d')
     ax.scatter(X[:, 0], X[:, 1], Z, color='red', marker="x")
     ax.scatter(plot[:, 0], plot[:, 1], f(plot))
     ax.scatter(best[0][0], best[0][1], best[1], color="red")
     ax.scatter(gp.get_X()[:, 0], gp.get_X()[:, 1], gp.get_Y(), marker="x", color="black")
-    plt.show()
+    plt.show()"""
 
 
 def test_minimization_1D():
@@ -146,17 +150,27 @@ def test_minimization_1D():
     Z = f(X)
 
     gp = GP(X, Z, normalize_y=True)
-    gp.fit()
-    BayOpt = BayesianOptimization(X, Z, gp, f)
+    settings={"type":"DIRECT",
+              "n_search": 5,
+              "boundaries": [[0, 1]],
+              "epsilon": 0.01,
+              "iteration":10,
+              "minimization":True,
+              "optimization":True,
+              "n_restart":10,
+              "sampling":np.linspace}
+
+    BayOpt = BayesianOptimization(X, Z, settings, gp, f)
+    best=BayOpt.run()
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
-    best = BayOpt.bayesian_run_min( 250,
-                                    [[0,1]],
-                                    iteration=30,
-                                    optimization=False,
-                                    plot=False,
-                                    n_restart=10,
-                                    epsilon=0.01,
-                                    func=np.linspace)
+    """best = BayOpt.bayesian_run_min(250,
+                                   [[0,1]],
+                                   iteration=30,
+                                   optimization=False,
+                                   plot=False,
+                                   n_restart=10,
+                                   epsilon=0.01,
+                                   sampling=np.linspace)"""
 
     print("bay:", best)
 
@@ -195,16 +209,22 @@ def test_Hartmann_6D():
 
     gp = GP(x, y)
     gp.fit()
-    BayOpt = BayesianOptimization(x, y, gp, hartmann_6D)
+
+    settings = {"type": "BFGL",
+                "n_search": 5,
+                "boundaries": [[0, 1] for i in range(6)],
+                "epsilon": 0.01,
+                "iteration": 35,
+                "minimization": True,
+                "optimization": True,
+                "n_restart": 10,
+                "sampling": np.random.uniform}
+
+    BayOpt = BayesianOptimization(x, y, settings, gp, hartmann_6D)
 
     n_p = 10
 
-    best = BayOpt.bayesian_run_BFGL(n_p,
-                                   [[0, 1] for i in range(6)],
-                                   iteration=30,
-                                   optimization=True,
-                                   epsilon=0.01,
-                                   func=np.random.uniform)
+    best = BayOpt.run()
 
     print("Number of points sampled in an iteration: ", n_p ** dim)
     print("bay:", best)
@@ -228,7 +248,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_Hartmann_6D()
+test_minimization_2D()
 print("Finished: ", time.time() - a)
 
 
