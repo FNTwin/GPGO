@@ -40,7 +40,7 @@ def test_GP_1D(optimize=True):
 
 
         #gp.opt(n_restarts=30)
-        gp.opt()
+        gp.opt(n_restarts=4,verbose=True)
         #optimized.fit()
         pred, var = gp.predict(plot[:, None])
 
@@ -116,8 +116,8 @@ def test_minimization_2D():
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
     best = BayOpt.bayesian_run_min(200,
                                    boundaries,
-                                   iteration=20,
-                                   optimization=True,
+                                   iteration=50,
+                                   optimization=False,
                                    epsilon=0.01,
                                    func=np.random.uniform)
 
@@ -151,10 +151,10 @@ def test_minimization_1D():
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
     best = BayOpt.bayesian_run_min( 250,
                                     [[0,1]],
-                                    iteration=10,
-                                    optimization=True,
+                                    iteration=30,
+                                    optimization=False,
                                     plot=False,
-                                    n_restart=50,
+                                    n_restart=10,
                                     epsilon=0.01,
                                     func=np.linspace)
 
@@ -199,10 +199,10 @@ def test_Hartmann_6D():
 
     n_p = 10
 
-    best = BayOpt.bayesian_run_min(n_p,
+    best = BayOpt.bayesian_run_BFGL(n_p,
                                    [[0, 1] for i in range(6)],
-                                   iteration=1,
-                                   optimization=False,
+                                   iteration=30,
+                                   optimization=True,
                                    epsilon=0.01,
                                    func=np.random.uniform)
 
@@ -228,7 +228,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_minimization_1D()
+test_Hartmann_6D()
 print("Finished: ", time.time() - a)
 
 

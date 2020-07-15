@@ -62,11 +62,16 @@ class GP():
                    - .5 * K.shape[0] * np.log(2 * np.pi)
 
         except np.linalg.LinAlgError as exc:
-            print(exc, "\nComputing as a normal inverse\n")
-            K=np.linalg.inv(kernel)
-            marg = - .5 * Y.T.dot(K.dot( Y)) \
-                   - .5 * np.log(np.diag(K)).sum() \
-                   - .5 * K.shape[0] * np.log(2 * np.pi)
+            try:
+                 print(exc, "\nComputing as a normal inverse\n")
+                 K=np.linalg.inv(kernel)
+                 marg = - .5 * Y.T.dot(K.dot( Y)) \
+                        - .5 * np.log(np.diag(K)).sum() \
+                        - .5 * K.shape[0] * np.log(2 * np.pi)
+
+            except:
+                 print("Numerical instability")
+                 marg=np.inf
 
         return marg
 

@@ -1,7 +1,7 @@
 import numpy as np
 from GaussianProcess.GP import GP, generate_grid
 from GaussianProcess.Plotting import plot_BayOpt
-from GaussianProcess.util import time_log, log_bo
+from GaussianProcess.util import time_log, log_bo, Observer
 from scipy.optimize import minimize, fmin_l_bfgs_b
 from scipy.stats import norm
 from DIRECT import solve
@@ -23,6 +23,7 @@ class BayesianOptimization():
         self.__err = err
         self.__it = None
         self.__time = time_log()
+        self.__observer=Observer("Bayesian Optimization")
         self.__old_data = [X, Y]
 
     def next_sample_validation(self, new_sample, boundaries):
@@ -189,6 +190,8 @@ class BayesianOptimization():
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
                 predicted_best_Y = self.compute_new_sample(predicted_best_X)
 
+                self.observe(predicted_best_Y)
+
                 print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
 
                 # Augment the dataset of the BO and the GP objects
@@ -200,9 +203,12 @@ class BayesianOptimization():
             else:
                 best_index = np.argmax(self.get_Y())
 
+            self.observer_plot()
+
             return self.get_X()[best_index], self.get_Y()[best_index]
 
     def Expected_improment(self, new_points, max, gp, epsilon):
+        print(new_points)
         def Z(point, mean, variance, epsilon):
             return (-mean + point + epsilon) / variance
 
@@ -248,7 +254,7 @@ class BayesianOptimization():
                          iteration=10,
                          optimization=False,
                          epsilon=0.1,
-                         n_restart=50,
+                         n_restart=5,
                          n_opt_points=100,
                          func=np.random.uniform,
                          plot=False):
@@ -258,6 +264,7 @@ class BayesianOptimization():
                              "Bayesian Optimization")
 
         else:
+
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
             tm = self.get_time_logger()
@@ -298,6 +305,7 @@ class BayesianOptimization():
 
                 if self.get_func() is not None:
                     predicted_best_Y = self.compute_new_sample(predicted_best_X)
+                    self.observe(predicted_best_Y)
                     # Augment the dataset of the BO and the GP objects
                     self.augment_XY(predicted_best_X, predicted_best_Y)
                     gp.augment_XY(predicted_best_X, predicted_best_Y)
@@ -310,6 +318,7 @@ class BayesianOptimization():
             tm.time_end()
             # log_bo(self.__str__())
             print("TIME:",tm)
+            self.observer_plot()
 
             return self.get_X()[best_index], self.get_Y()[best_index]
 
@@ -779,6 +788,12 @@ class BayesianOptimization():
             plt.show()"""
 
             return error, val
+
+    def observe(self,value):
+        self.__observer.observe(value)
+
+    def observer_plot(self):
+        self.__observer.plot()
 
 
 def Expected_Improvement_max(new_point, mean, variance, epsilon):
