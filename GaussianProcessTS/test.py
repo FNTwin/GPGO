@@ -9,30 +9,34 @@ from Opt import BayesianOptimization
 
 def test_GP_1D(optimize=True):
     #x =  np.arange(-3, 5, 1)[:, None]
-    x=np.random.uniform(0,1,300)[:,None]
+    x=np.random.uniform(0,1,10)[:,None]
+    #x=np.array([0.1,10,40,150])[:,None]
 
     def f(X):
         #return np.sin(X)
-        return (6 * X - 2) ** 2 * np.sin(12 * X - 4)
+        return (6 * X - 2) ** 2 * np.sin(12 * X - 4) - X
+        #return X + np.sin(X)*10
+
+    def denorm(X):
+        min,max=np.min(X),10000
+        return (X-min)/(max-min),min,max
 
     def noise(x, alpha=1):
         return f(x) + np.random.randn(*x.shape) * alpha
 
-    #y = noise(x, alpha=2)
-    x = np.random.uniform(-5, 5, (300,1))
-    y = np.array([0.4 * (a*a)*np.sin(a-4) + (.6 * np.random.randn()) for a in x])
+    y = noise(x, alpha=0)
 
-    epsilon = 1  # Energy minimum
-    sigma = 1  # Distance to zero crossing point
-    x=np.random.uniform(0.8,3, 30)[:,None]
-    y = 4 * epsilon * ((sigma / x) ** 12 - (sigma / x) ** 6)
+    """x = np.random.uniform(-5, 5, (300,1))
+    y = np.array([0.4 * (a*a)*np.sin(a-4) + (.8 * np.random.randn()) for a in x])"""
 
-    gp = GP(x, y, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-2, gradient=True), normalize_y=True)
+
+
+    gp = GP(x*30000, y, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-2, gradient=False), normalize_y=True)
     gp.fit()
 
-    plot = np.linspace(0.1,3.5, 1000)
+    plot = np.linspace(-5000,35000, 100000)
 
-    pred_old, var_old = gp.predict(plot[:, None])
+    #pred_old, var_old = gp.predict(plot[:, None])
 
     #gp.plot(plot[:, None])
     gp.static_compute_marg()
@@ -45,14 +49,16 @@ def test_GP_1D(optimize=True):
 
 
         #gp.opt(n_restarts=30)
-        gp.opt(n_restarts=100,verbose=True)
+        gp.set_boundary([1e-4,1000])
+
+        gp.optimize(n_restarts=10, optimizer="L-BFGS-B", verbose=True)
+
         #optimized.fit()
-        pred, var = gp.predict(plot[:, None])
+        #pred, var = gp.predict(plot[:, None])
 
         gp.plot(plot[:, None])
         gp.static_compute_marg()
-        print("New marg likelihood :", gp.get_marg(),
-              "\n Hyperparameters: ", gp.get_kernel().gethyper())
+        print(gp)
 
 
 def test_GP_2D(optimize=True, function=np.linspace):
@@ -72,7 +78,7 @@ def test_GP_2D(optimize=True, function=np.linspace):
           "\n Hyperparameters: ", gp.get_kernel().gethyper())
 
     if optimize:
-        gp.opt(n_restarts=50)
+        gp.optimize(n_restarts=50)
         pred = gp.predict(plot)
         gp.plot(plot)
         print("New marg likelihood :", gp.get_marg(),
@@ -95,7 +101,7 @@ def test_GP_4D(optimize=False):
           "\n Hyperparameters: ", gp.get_kernel().gethyper())
 
     if optimize:
-        gp.optimize(constrains=[[1, 3], [2, 100],[0,30]], n_points=100, function=np.random.uniform)
+        gp.optimize_grid(constrains=[[1, 3], [2, 100], [0, 30]], n_points=100, function=np.random.uniform)
         mean, var = gp.predict(plot)
         print("New marg likelihood :", gp.get_marg(),
               "\n Hyperparameters: ", gp.get_kernel().gethyper())
@@ -188,6 +194,7 @@ def test_Hartmann_6D():
     points = 10
     x = np.random.uniform(0, 1, (10, 6))
 
+
     def hartmann_6D(x):
         alpha = np.array([[1.], [1.2], [3.], [3.2]])
 
@@ -218,11 +225,11 @@ def test_Hartmann_6D():
     gp = GP(x, y, RBF(gradient=False))
     gp.fit()
 
-    settings = {"type": "BFGL",
+    settings = {"type": "DIRECT",
                 "n_search": 10,
                 "boundaries": [[0, 1] for i in range(6)],
-                "epsilon": 0.01,
-                "iteration": 50,
+                "epsilon": 0.1,
+                "iteration": 10,
                 "minimization": True,
                 "optimization": True,
                 "n_restart": 10,
@@ -237,6 +244,38 @@ def test_Hartmann_6D():
     print("Number of points sampled in an iteration: ", n_p ** dim)
     print("bay:", best)
 
+def test_rosen(n):
+
+    boundaries=[[-10,10] for i in range(n)]
+    x = np.random.uniform(*boundaries[0], (5, n))
+
+    def test(x):
+        return np.sum(x**10,axis=1)[:,None]
+
+    y=test(x)
+    print(y)
+
+    gp = GP(x, y, RBF(gradient=False))
+    gp.fit()
+
+    settings = {"type": "BFGS",
+                "n_search": 10,
+                "boundaries": boundaries,
+                "epsilon": 0.01,
+                "iteration": 20,
+                "minimization": True,
+                "optimization": True,
+                "n_restart": 10,
+                "sampling": np.random.uniform}
+
+    BayOpt = BayesianOptimization(x, y, settings, gp, test)
+
+    n_p = 10
+
+    best = BayOpt.run()
+
+    print("bay:", best)
+
 
 def test_GP_print():
     dim_test = 2
@@ -248,7 +287,7 @@ def test_GP_print():
     gp.get_kernel().plot()
     gp.fit()
     plot = generate_grid(dim_test, 5, [[-3, 3] for i in range(dim_test)])
-    gp.optimize(n_points=5, verbose=True)
+    gp.optimize_grid(n_points=5, verbose=True)
     gp.get_kernel().plot()
     pred = gp.predict(plot)
     print(gp)
@@ -256,7 +295,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_minimization_1D()
+test_GP_1D(True)
 print("Finished: ", time.time() - a)
 
 

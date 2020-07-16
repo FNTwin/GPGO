@@ -24,7 +24,7 @@ class GP():
         self.__data = {"X": self.__X, "Y": self.__Y}
         self.__kernel = kernel
         self.__cov = cov
-        self.__normalize_y = True
+        self.__normalize_y = normalize_y
         self.__marg = None
         self.__stat = False
 
@@ -183,21 +183,23 @@ class GP():
 
         return best
 
-    def optimize(self, constrains=[[1e-5, 30], [1e-5, 30], [1e-5, 10]], n_points=100, function=np.linspace,
-                 verbose=False):
+    def optimize_grid(self, constrains=[[1e-5, 30], [1e-5, 30], [1e-5, 10]], n_points=100, function=np.linspace,
+                      verbose=False):
         args = (constrains, n_points, function, verbose)
         new = self.grid_search_optimization(*args)
         self.set_marg(new["marg"])
         self.set_hyper(new["hyper"][0], new["hyper"][1], self.get_noise())
         self.fit()
 
-    def opt(self, constrains=[[1e-4, 10], [1e-4, 10], [1e-4, 10]], n_restarts=10, verbose=False):
-        self.__optimizer = "L-BFGS-B"
-        boundaries = np.asarray(constrains)
+    def optimize(self,  n_restarts=10, optimizer="L-BFGS-B", verbose=False):
+        """TNC , L-BFGS-VB, SLSCP"""
+        #constrains=[[1e-5, 10],[1e-5, 10], [1e-5, 10]]
+        self.__optimizer = optimizer
         self.static_compute_marg()
         old_marg = self.get_marg()
         old_hyper = self.get_kernel().gethyper()
-
+        #boundaries = np.asarray([[1e-4, 10] for i in range(len(old_hyper))])
+        boundaries=self.get_boundary()
         eval_grad = self.get_kernel().get_eval()
 
         print("Starting Log Marginal Likelihood Value: ", old_marg)
@@ -212,7 +214,7 @@ class GP():
         for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1],
                                    size=(n_restarts, len(self.get_kernel().gethyper()))):
             it += 1
-            print("RESTART :", it)
+            print("RESTART :", it, i)
 
             # if not eval_grad:
             res = minimize(lambda h: self.compute_marg(X=X_d,
@@ -223,7 +225,8 @@ class GP():
                                                            h.reshape(-1, len(self.get_kernel().gethyper()))))),
                            x0=i,
                            bounds=((1e-5, None), (1e-5, None), (1e-5, None)),
-                           method='L-BFGS-B',
+                           #method='L-BFGS-B',
+                           method=self.__optimizer,
                            jac=eval_grad)
 
             """else:
@@ -411,6 +414,21 @@ class GP():
     def set_marg(self, marg):
         self.__marg = marg
 
+    def get_boundary(self):
+        try:
+            return self.__boundary
+        except AttributeError:
+            self.__boundary = np.asarray([[1e-4, 10] for i in range(len(self.get_kernel().gethyper()))])
+            return self.__boundary
+        """if hasattr(self,"__boundary"):
+            return self.__boundary
+        else:
+            self.__boundary=np.asarray([[1e-4, 10] for i in range(len(self.get_kernel().gethyper()))])
+            return self.__boundary"""
+
+    def set_boundary(self,array):
+        self.__boundary=np.asarray([array for i in range(len(self.get_kernel().gethyper()))])
+
     def set_hyper(self, sigma=None, l=None, noise=None):
         self.get_kernel().sethyper(sigma, l, noise)
 
@@ -426,8 +444,10 @@ class GP():
         header = "#=========================GP===========================\n"
         tail = "#======================================================"
         X, Y = self.get_X(), self.get_Y()
-        if not hasattr(self, "__optimizer"):
+        try:
             gp_info = f"Optimizer: {self.__optimizer}\n"
+        except:
+            gp_info = f"Optimizer: No Optimized\n"
         kernel_info = str(self.get_kernel())
         train_info = f'Train values: {self.get_dim_data()}\nInput Dimension: {self.__dim_input} Output Dimension: {self.get_dim_outspace()}\n'
         train_info += f'\t\t\t\tX_train\t\t\t\tY_train\n'
@@ -440,8 +460,10 @@ class GP():
         header = "#=========================GP===========================\n"
         tail = "#======================================================"
         X, Y = self.get_X(), self.get_Y()
-        if not hasattr(self, "__optimizer"):
+        try:
             gp_info = f"Optimizer: {self.__optimizer}\n"
+        except:
+            gp_info = f"Optimizer: No Optimized\n"
         kernel_info = str(self.get_kernel())
         train_info = f'Train values: {self.get_dim_data()}\nInput Dimension: {self.__dim_input} Output Dimension: {self.get_dim_outspace()}\n'
         train_info += f'\t\t\t\tX_train\t\t\t\tY_train\n'

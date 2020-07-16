@@ -13,7 +13,7 @@ import time
 
 class BayesianOptimization():
 
-    def __init__(self, X: np.ndarray, Y: np.ndarray, settings=None, GP=None, func=None, err=1e-6):
+    def __init__(self, X: np.ndarray, Y: np.ndarray, settings=None, GP=None, func=None, err=1e-4):
         self.__dim_input = X[0].shape[0]
         self.__dim_output = Y[0].shape[0]
         self.__dimension = X.shape[0]
@@ -27,6 +27,7 @@ class BayesianOptimization():
         self.__time = time_log()
         self.__observer=Observer("Bayesian Optimization")
         self.__old_data = [X, Y]
+        #Fare verbose
 
     def run(self):
         print(self.__settings)
@@ -34,7 +35,7 @@ class BayesianOptimization():
             if self.__settings is not None:
                  copy_settings=self.__settings
                  bay_opt_methods= {"DIRECT":self.bayesian_run_DIRECT,
-                                     "BFGL":self.bayesian_run_BFGL,
+                                     "BFGS":self.bayesian_run_BFGL,
                                     "NAIVE": self.bayesian_run_min}
 
                  optimizer=bay_opt_methods[self.get_info("type")]
@@ -75,7 +76,7 @@ class BayesianOptimization():
 
     '#===================================BAYESIAN DIRECT====================================='
 
-    def optimize(self, f, boundaries, max_iter=10000):
+    def optimize(self, f, boundaries, max_iter=6000):
 
         def DIRECT_wrapper(f):
             def g(x, user_data):
@@ -84,7 +85,8 @@ class BayesianOptimization():
 
         lb=boundaries[:, 0]
         ub=boundaries[:,1]
-        x, val, _ = solve(DIRECT_wrapper(f), lb, ub, maxf= 80000 , maxT=max_iter, algmethod=1)
+        #maxf= 80000
+        x, val, _ = solve(DIRECT_wrapper(f), lb, ub,  maxT=max_iter, algmethod=0)
         print("DIRECT:" ,x, val)
         return x
 
@@ -115,7 +117,8 @@ class BayesianOptimization():
         EI[EI == 0] = 0
         return EI
 
-    def DIRECT_new_sample_loc(self, boundaries, search_grid, epsilon):
+    #def DIRECT_new_sample_loc(self, boundaries, search_grid, epsilon):
+    def DIRECT_new_sample_loc(self, boundaries,  epsilon):
 
         min = self.optimize(self.Expected_improment_dir, boundaries)
         return np.atleast_2d(min)
@@ -129,6 +132,8 @@ class BayesianOptimization():
                             optimization=False,
                             n_restart=100,
                             sampling=np.random.uniform):
+        """Direct optimizer based on DIRECT wrapper, be weary that n_search doesn't do anything
+        in this method because the DIRECT optimizer doeesn't require/need a starting point"""
 
         if GP is None:
             raise ValueError("Gaussian Process not existing. Define one before running a " +
@@ -142,15 +147,15 @@ class BayesianOptimization():
             for i in range(iteration):
                 print("iteration: ", i+1)
 
-                search_grid = generate_grid(dim, n_search, boundaries, function=sampling)
+                #search_grid = generate_grid(dim, n_search, boundaries, function=sampling)
 
                 if optimization:
-                    gp.opt(n_restarts=n_restart)
+                    gp.optimize(n_restarts=n_restart)
                     print("Optimization: ", i, " completed")
 
                 gp.fit()
 
-                predicted_best_X = self.DIRECT_new_sample_loc(boundaries_array, search_grid, epsilon)
+                predicted_best_X = self.DIRECT_new_sample_loc(boundaries_array,  epsilon)
 
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
@@ -176,7 +181,7 @@ class BayesianOptimization():
 
 
 
-    '#===================================Bayesian BFGL======================================='
+    '#===================================Bayesian BFGS======================================='
 
     def bayesian_run_BFGL(self,
                           n_search,
@@ -200,12 +205,12 @@ class BayesianOptimization():
             for i in range(1, iteration + 1):
                 print("Iteration: ", i)
                 # Generate dimensional Grid to search
-                search_grid = generate_grid(dim, n_search, boundaries, function=sampling)
+                #search_grid = generate_grid(dim, n_search, boundaries, function=sampling)
 
                 # Generate surrogate model GP and predict the grid values
                 gp.fit()
                 if optimization:
-                    gp.opt(n_restarts=n_restart)
+                    gp.optimize(n_restarts=n_restart)
                     print("Optimization: ", i, " completed")
 
                 # Compute the EI and the new theoretical best
@@ -251,6 +256,7 @@ class BayesianOptimization():
     def propose_new_sample_loc(self, EI_func, gp, boundaries, n_search_points, epsilon):
         dim = self.get_dim_inputspace()
         min_val = None
+
         max = np.min(self.get_Y())
 
         """def min_objective(X, max, gp, epsilon):
@@ -306,8 +312,8 @@ class BayesianOptimization():
                     print("Iteration: ", i)
                     # Generate dimensional Grid to search
                     if sampling== "LHS":
-                        sampling = LHS(xlimits=boundaries_array)
-                        search_grid=sampling(n_search)
+                        lhs_generator= LHS(xlimits=boundaries_array)
+                        search_grid=lhs_generator(n_search)
 
                     else:
                         search_grid = generate_grid(dim, n_search, boundaries, sampling)
@@ -316,7 +322,7 @@ class BayesianOptimization():
                     gp.fit()
                     if optimization:
                         #gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
-                        gp.opt(n_restarts=n_restart)
+                        gp.optimize(n_restarts=n_restart)
                         print("Optimization: ", i, " completed")
 
                     mean, var = gp.predict(search_grid)
@@ -408,8 +414,8 @@ class BayesianOptimization():
                 print("Iteration: ", i)
                 # Generate dimensional Grid to search
                 if sampling == "LHS":
-                    sampling = LHS(xlimits=boundaries_array)
-                    search_grid = sampling(n_search)
+                    lhs_generator = LHS(xlimits=boundaries_array)
+                    search_grid = lhs_generator(n_search)
 
                 else:
                     search_grid = generate_grid(dim, n_search, boundaries, sampling)
@@ -417,7 +423,7 @@ class BayesianOptimization():
                 # Generate surrogate model GP and predict the grid values
                 gp.fit()
                 if optimization:
-                    gp.opt(n_restarts=n_restart)
+                    gp.optimize(n_restarts=n_restart)
                     print("Optimization: ", i, " completed")
                 mean, var = gp.predict(search_grid)
                 print("Surrogate Model generated: ", i)
@@ -498,9 +504,9 @@ class BayesianOptimization():
             # Generate surrogate model GP and predict the grid values
             gp.fit()
             if optimization:
-                gp.optimize(constrains=opt_constrain,
-                            n_points=n_opt_points,
-                            function=np.random.uniform)
+                gp.optimize_grid(constrains=opt_constrain,
+                                 n_points=n_opt_points,
+                                 function=np.random.uniform)
                 print("Optimization of the model completed\n")
 
             mean, var = gp.predict(search_grid)
@@ -554,9 +560,9 @@ class BayesianOptimization():
 
             # Generate surrogate model GP and predict the grid values
             if optimization:
-                gp.optimize(constrains=opt_constrain,
-                            n_points=n_opt_points,
-                            function=np.random.uniform)
+                gp.optimize_grid(constrains=opt_constrain,
+                                 n_points=n_opt_points,
+                                 function=np.random.uniform)
                 print("Optimization of the model completed\n")
 
             gp.fit()
@@ -724,7 +730,7 @@ class BayesianOptimization():
                 search_grid = generate_grid(dim, n_search_points, boundaries, function=func)
 
                 if optimization:
-                    gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=func)
+                    gp.optimize_grid(constrains=opt_constrain, n_points=n_opt_points, function=func)
                     print("Optimization: ", i, " completed")
                 gp.fit()
 
@@ -789,7 +795,7 @@ class BayesianOptimization():
                 gp.fit()
                 if optimization:
                     if (i % 5 == 0):
-                        gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
+                        gp.optimize_grid(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
                         print("Optimization: ", i, " completed")
                     else:
                         pass

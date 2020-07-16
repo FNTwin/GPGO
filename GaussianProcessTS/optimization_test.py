@@ -160,7 +160,7 @@ def test_GP_2D(optimize=True, function=np.linspace):
           "\n Hyperparameters: ", gp.get_kernel().gethyper())
 
     if optimize:
-        gp.optimize(constrains=[[0.1,20],[0.5,30]], n_points=200, function=function)
+        gp.optimize_grid(constrains=[[0.1, 20], [0.5, 30]], n_points=200, function=function)
         #pred = gp.predict(plot)
         gp.plot(plot)
         print("New marg likelihood :", gp.get_marg(),
