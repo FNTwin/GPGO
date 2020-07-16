@@ -21,13 +21,6 @@ def log_bo(bayOpt, path):
     f.close()
 
 
-def write_data_file():
-    pass
-
-
-def read_data_file():
-    pass
-
 
 class time_log():
 
@@ -52,14 +45,16 @@ class time_log():
         return str(self.end - self.start)
 
     def __str__(self):
-        start = f'{str(self.end - self.start)}\n'
+        start = f'Time: {str(self.end - self.start)} seconds\n'
         return start
 
 class Observer():
+
     def __init__(self, type_opt):
         self.type=type_opt
         self.best={}
         self.iterator=iter(self)
+        self.all=[]
 
     def __iter__(self):
         self.iterations = 0
@@ -69,6 +64,14 @@ class Observer():
         it = self.iterations
         self.iterations += 1
         return it
+
+    def compute_distance(self):
+        x=self.all
+        tmp=[]
+        for i in range(len(x)-1):
+            tmp.append(np.linalg.norm(x[i] - x[i + 1]))
+        return tmp
+
 
     def compute_convergence(self):
         values, rep, conv = [], [], []
@@ -81,23 +84,40 @@ class Observer():
 
     def convergence_plot(self, conv):
         n = len(conv)
-        plt.plot(np.arange(1, n + 1, 1), conv, color="red", linestyle="--")
-        plt.scatter(np.arange(1, n + 1, 1), conv, color="red",label="Convergence Value")
-        plt.legend()
+
+        plt.figure()
+        ax=plt.subplot(1,2,1)
+        ax.set_title("Convergence Plot")
+        ax.plot(np.arange(1, n + 1, 1), conv, color="red", linestyle="--")
+        ax.scatter(np.arange(1, n + 1, 1), conv, color="red",label="Y")
+        ax.set(xlabel="Iteration", ylabel="y value")
+        ax.legend()
+
+        ax1=plt.subplot(1,2,2)
+        dist=self.compute_distance()
+        ax1.set_title("Distance Plot")
+        ax1.plot(np.arange(2, n+1 , 1), dist,color="Black")
+        ax1.scatter(np.arange(2, n+1 , 1),dist,color="Black", marker="o",label="d")
+        ax1.set(xlabel="Iteration", ylabel="d([x_n]-x[n-1])")
+        ax1.legend()
+
         plt.show()
 
     def plot(self):
         _,_,conv=self.compute_convergence()
         self.convergence_plot(conv)
 
-    def observe(self, value):
+    def observe(self, value, proposition):
 
-        def security_check(best,value):
+        def security_check(best, value):
             if np.squeeze(best[0])<=np.squeeze(value):
                 return False
             else:
                 return True
 
+        self.all.append(proposition)
+
+        #self.all.append(value) devo passare le x non le y
         if hasattr(self, "flag"):
             index=str(len(self.best)-1)
             best=self.best[index]
@@ -110,13 +130,11 @@ class Observer():
             self.flag=True
             self.best[str(next(self))] = [value, 1]
 
-
-
     def remove_observation(self):
         if hasattr(self, "iterations"):
             self.iterations-=1
         else:
-            print("No Observation pending!")
+            print("No Observation pending")
 
 
 

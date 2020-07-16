@@ -9,7 +9,7 @@ def plot_GP_1D(X_train, Y_train, lin, mean, var):
                 color="red", marker="x", label="Train")
 
     plt.plot(lin, mean,
-             color="black", linestyle="-", label="GP")
+             color="black", linestyle="-", label="GP Mean")
 
     plt.plot(lin, mean + 2 * var,
              color="Navy")
@@ -18,7 +18,7 @@ def plot_GP_1D(X_train, Y_train, lin, mean, var):
              color="Navy")
 
     plt.fill_between(lin.ravel(), (mean + 2 * var).ravel(), (mean - 2 * var).ravel(),
-                     alpha=0.2, color="Navy", label="confidence")
+                     alpha=0.2, color="Navy", label="GP Variance")
     return plt
 
 
@@ -46,7 +46,7 @@ def plot_improvement(X_train, Y_train, grid, mean, var, improvement):
                   marker="x", color="red", label="Train")
 
     ax[0].plot(grid, mean,
-               linestyle="--", color="black", label="GP")
+               linestyle="--", color="black", label="GP Mean")
 
     ax[0].plot(grid, mean + 2 * var,
                alpha=0.3, color="navy")
@@ -55,7 +55,7 @@ def plot_improvement(X_train, Y_train, grid, mean, var, improvement):
                alpha=0.3, color="navy")
 
     ax[0].fill_between(grid.ravel(), (mean + 2 * var).ravel(), (mean - 2 * var).ravel(),
-                       alpha=0.2, color="navy", label="confidence")
+                       alpha=0.2, color="navy", label="GP Variance")
 
 
     ax[1].plot(grid, improvement,

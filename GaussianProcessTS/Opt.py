@@ -44,8 +44,8 @@ class BayesianOptimization():
                  return optimizer(**copy_settings)
             else:
                 print("Settings not specified")
-        except:
-            print("Error on inizialing the Bayesian Optimization")
+        except BaseException as b:
+            print("Error on inizialing the Bayesian Optimization\n",b)
 
     def get_info(self,key):
         return self.__settings[key]
@@ -156,7 +156,8 @@ class BayesianOptimization():
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
                 print("COMPUTING:", predicted_best_X)
                 predicted_best_Y = self.compute_new_sample(predicted_best_X)
-                self.observe(predicted_best_Y)
+
+                self.observe(predicted_best_Y, predicted_best_X)
 
                 print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
 
@@ -217,7 +218,7 @@ class BayesianOptimization():
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
                 predicted_best_Y = self.compute_new_sample(predicted_best_X)
 
-                self.observe(predicted_best_Y)
+                self.observe(predicted_best_Y, predicted_best_X)
 
                 print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
 
@@ -335,7 +336,8 @@ class BayesianOptimization():
 
                     if self.get_func() is not None:
                         predicted_best_Y = self.compute_new_sample(predicted_best_X)
-                        self.observe(predicted_best_Y)
+
+                        self.observe(predicted_best_Y, predicted_best_X)
                         # Augment the dataset of the BO and the GP objects
                         self.augment_XY(predicted_best_X, predicted_best_Y)
                         gp.augment_XY(predicted_best_X, predicted_best_Y)
@@ -431,7 +433,7 @@ class BayesianOptimization():
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
                 predicted_best_Y = self.compute_new_sample(predicted_best_X)
-                self.__observer.observe(predicted_best_Y)
+                self.__observer.observe(predicted_best_Y, predicted_best_X)
 
                 # Augment the dataset of the BO and the GP objects
                 self.augment_XY(predicted_best_X, predicted_best_Y)
@@ -832,8 +834,8 @@ class BayesianOptimization():
 
             return error, val
 
-    def observe(self,value):
-        self.__observer.observe(value)
+    def observe(self,value, propose):
+        self.__observer.observe(value,propose)
 
     def observer_plot(self):
         self.__observer.plot()

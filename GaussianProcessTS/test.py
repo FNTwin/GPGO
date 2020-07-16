@@ -18,18 +18,23 @@ def test_GP_1D(optimize=True):
     def noise(x, alpha=1):
         return f(x) + np.random.randn(*x.shape) * alpha
 
-    y = noise(x, alpha=1.2)
-    #x = np.random.uniform(-5, 5, (20,1))
-    #y = np.array([0.25 * (a*a) + (.25 * np.random.randn()) for a in x])
+    #y = noise(x, alpha=2)
+    x = np.random.uniform(-5, 5, (300,1))
+    y = np.array([0.4 * (a*a)*np.sin(a-4) + (.6 * np.random.randn()) for a in x])
 
-    gp = GP(x, y, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-2), normalize_y=True)
+    epsilon = 1  # Energy minimum
+    sigma = 1  # Distance to zero crossing point
+    x=np.random.uniform(0.8,3, 30)[:,None]
+    y = 4 * epsilon * ((sigma / x) ** 12 - (sigma / x) ** 6)
+
+    gp = GP(x, y, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-2, gradient=True), normalize_y=True)
     gp.fit()
 
-    plot = np.linspace(0,1.2, 1000)
+    plot = np.linspace(0.1,3.5, 1000)
 
     pred_old, var_old = gp.predict(plot[:, None])
 
-    gp.plot(plot[:, None])
+    #gp.plot(plot[:, None])
     gp.static_compute_marg()
     print("Old marg likelihood :", gp.get_marg(), "\n Hyperparameters: ",
           gp.get_kernel().gethyper())
@@ -40,7 +45,7 @@ def test_GP_1D(optimize=True):
 
 
         #gp.opt(n_restarts=30)
-        gp.opt(n_restarts=4,verbose=True)
+        gp.opt(n_restarts=100,verbose=True)
         #optimized.fit()
         pred, var = gp.predict(plot[:, None])
 
@@ -77,6 +82,7 @@ def test_GP_2D(optimize=True, function=np.linspace):
 def test_GP_4D(optimize=False):
     x = generate_grid(4, 3, [[-2, 2] for i in range(4)], np.random.uniform)
 
+
     def f(x):
         return x[:, 1] ** 2 - x[:, 3] * x[:, 0]
 
@@ -110,16 +116,16 @@ def test_minimization_2D():
                      x1 - 6) ** 2 + 10 * (1 - (1 / (8 * np.pi))) * np.cos(x1) + 10)
 
     Z = f(X)[:, None]
-    gp = GP( X, Z)
+    gp = GP( X, Z, RBF(gradient=True))
     gp.fit()
     settings = {"type": "BFGL",
-                "n_search": 15,
+                "n_search": 10,
                 "boundaries": boundaries,
                 "epsilon": 0.01,
-                "iteration": 30,
+                "iteration": 50,
                 "minimization": True,
                 "optimization": True,
-                "n_restart": 5,
+                "n_restart": 10,
                 "sampling": np.random.uniform}
 
     BayOpt = BayesianOptimization(X,Z, settings, gp, f)
@@ -142,19 +148,21 @@ def test_minimization_1D():
     dim_out = 1
     n_train_p = 3
 
-    X = np.array([[0.1],[0.3]])
+    X = np.array([[1.3],[2.1]])
+
 
     def f(X):
-        return (6* X - 2)**2 * np.sin (12 * X - 4)
+        #return (6* X - 2)**2 * np.sin (12 * X - 4)
+        return 4 * 100 * ((.9 / X) ** 12 - (.9 / X) ** 6)
 
     Z = f(X)
 
-    gp = GP(X, Z, normalize_y=True)
+    gp = GP(X, Z, RBF(gradient=True), normalize_y=True)
     settings={"type":"DIRECT",
-              "n_search": 5,
-              "boundaries": [[0, 1]],
+              "n_search": 10,
+              "boundaries": [[0.85,3]],
               "epsilon": 0.01,
-              "iteration":10,
+              "iteration": 10,
               "minimization":True,
               "optimization":True,
               "n_restart":10,
@@ -207,14 +215,14 @@ def test_Hartmann_6D():
 
     y = hartmann_6D(x)
 
-    gp = GP(x, y)
+    gp = GP(x, y, RBF(gradient=False))
     gp.fit()
 
     settings = {"type": "BFGL",
-                "n_search": 5,
+                "n_search": 10,
                 "boundaries": [[0, 1] for i in range(6)],
                 "epsilon": 0.01,
-                "iteration": 35,
+                "iteration": 50,
                 "minimization": True,
                 "optimization": True,
                 "n_restart": 10,
@@ -248,7 +256,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_minimization_2D()
+test_minimization_1D()
 print("Finished: ", time.time() - a)
 
 

@@ -11,14 +11,27 @@ class RBF(Kernel):
     Init method require the hyperparameters as an input (variance, lengthscale, noise)
     """
 
-    def __init__(self, sigma_l=1., l=1. , noise=1e-6):
+    def __init__(self, sigma_l=1., l=1. , noise=1e-6, gradient=False):
         super().__init__()
         self.__hyper = {"sigma": sigma_l, "l": l, "noise": noise}
         self.__subtype = "rbf"
+        self.__eval_grad = gradient
 
     @staticmethod
-    def kernel_(sigma,l,pair_matrix):
-        return sigma ** 2 * np.exp(-.5 / l ** 2 * pair_matrix)
+    def kernel_(sigma,l,noise,pair_matrix):
+        K=sigma ** 2 * np.exp(-.5 / l ** 2 * pair_matrix)
+        K[np.diag_indices_from(K)] += noise**2
+        return K
+
+    @staticmethod
+    def kernel_eval_grad_(sigma,l,noise,pair_matrix):
+        K= np.exp(-.5 / l ** 2 * pair_matrix)
+        K_norm = sigma ** 2 * K
+        K_norm[np.diag_indices_from(K)] += noise ** 2
+        K_1=2*sigma*K
+        K_2=sigma**2 * K * pair_matrix / l**3
+        K_3=np.eye(pair_matrix.shape[0])*noise*2
+        return (K_norm,K_1,K_2,K_3)
 
     def product(self, x1, x2=0):
         """
@@ -73,6 +86,9 @@ class RBF(Kernel):
 
     def get_noise(self):
         return self.__hyper["noise"]
+
+    def get_eval(self):
+        return self.__eval_grad
 
     def __str__(self):
         kernel_info=f'Kernel type: {self.getsubtype()}\n'
