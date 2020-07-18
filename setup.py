@@ -8,7 +8,7 @@ setup(
     version='0.1',
     author='Cristian Gabellini',
     packages=find_packages(),
-    url='',
+    url='https://github.com/FNTwin/Bayesian-Optimization',
     license='MIT',
     description='Bayesian Optimization with Gaussian Process as surrogate model',
     long_description=read_me_description,
