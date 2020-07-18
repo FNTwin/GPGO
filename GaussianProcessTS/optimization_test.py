@@ -187,7 +187,7 @@ def test_GP_1D(optimize=False):
     gp.plot(plot[:, None])
 
 
-    gp.static_compute_marg()
+    gp.log_marginal_likelihood()
     print("Old marg likelihood :", gp.get_marg(), "\n Hyperparameters: ",
           gp.get_kernel().gethyper())
     if optimize:
@@ -200,7 +200,7 @@ def test_GP_1D(optimize=False):
         pred, var = optimized.predict(plot[:, None])
 
         optimized.plot(plot[:, None])
-        optimized.static_compute_marg()
+        optimized.log_marginal_likelihood()
         print("New marg likelihood :", optimized.get_marg(),
               "\n Hyperparameters: ", optimized.get_kernel().gethyper())
 

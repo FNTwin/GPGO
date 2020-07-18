@@ -11,10 +11,15 @@ class Matern(Kernel):
     Init method require the hyperparameters as an input (normal is sigma:2 , l:2)
     """
 
-    def __init__(self, sigma_l=2., l=2., noise=1e-2):
+    def __init__(self, sigma_l=2.,  noise=1e-2, gradient=False):
         super().__init__()
-        self.__hyper = {"sigma": sigma_l, "l": l, "noise": noise}
-        self.__subtype = "matern"
+        self.hyper = {"sigma": sigma_l,  "noise": noise}
+        self.subtype = "matern"
+        self.eval_grad= gradient
+
+    def kernel_var(self):
+        sigma,  noise = self.gethyper()
+        return sigma ** 2 + noise**2
 
     def product(self, x1, x2=0):
         """
@@ -33,35 +38,38 @@ class Matern(Kernel):
         :return: np.array
         """
 
-        sigma, l , noise= self.gethyper()
-        sq=np.sqrt(5)
-        dist = np.sum(X1 ** 2, axis=1)[:, None] + np.sum(X2 ** 2, axis=1) - 2 * np.dot(X1, X2.T)
-        return sigma ** 2 * np.exp(- sq * dist**2 / l ) * (1 + sq * dist + 5/ 3 * dist**2) / l
+        sigma, noise= self.gethyper()
+        dist = np.sum(X1 ** 2 , axis=1)[:, None] + np.sum(X2 ** 2 , axis=1) - 2 * np.dot(X1, X2.T)
+        K = dist* np.sqrt(5) /sigma
+        return (1. + K + K**2 / 3.0) * np.exp(-K)
 
 
     @staticmethod
-    def kernel_(sigma, l, pair_matrix):
-        return sigma ** 2 * np.exp(-.5 / l ** 2 * pair_matrix)
+    def kernel_(sigma, noise, pair_matrix):
+        K = pair_matrix * np.sqrt(5) / sigma
+        return (1. + K + K ** 2 / 3.0) * np.exp(-K) + noise**2
 
 
-    def sethyper(self, sigma, l, noise):
-        self.__hyper["sigma"] = sigma
-        self.__hyper["l"] = l
-        self.__hyper["noise"] = noise
+    def sethyper(self, sigma, noise):
+        self.hyper["sigma"] = sigma
+        self.hyper["noise"] = noise
 
     '#Get methods '
 
     def getsubtype(self):
-        return self.__subtype
+        return self.subtype
 
     def gethyper_dict(self):
-        return self.__hyper
+        return self.hyper
 
     def gethyper(self):
-        return tuple(self.__hyper.values())
+        return tuple(self.hyper.values())
 
     def get_noise(self):
-        return self.__hyper["noise"]
+        return self.hyper["noise"]
+
+    def get_eval(self):
+        return self.eval_grad
 
     def __str__(self):
         kernel_info = f'Kernel type: {self.getsubtype()}\n'

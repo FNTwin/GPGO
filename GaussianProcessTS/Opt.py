@@ -1,59 +1,165 @@
 import numpy as np
 from GaussianProcess.GP import GP, generate_grid
 from GaussianProcess.Plotting import plot_BayOpt
-from GaussianProcess.util import time_log, log_bo, Observer
-from scipy.optimize import minimize, fmin_l_bfgs_b
+from GaussianProcess.util import time_log,  Observer
+from scipy.optimize import minimize
 from scipy.stats import norm
 from DIRECT import solve
 import matplotlib.pyplot as plt
 from smt.sampling_methods import LHS
-import time
-
-#settings={type_of_opt, n_search, boundaries, iteration, minimization,  epsilon, optimization_GP, n_restart, func_sampling}
+import copy
 
 class BayesianOptimization():
+    """
+    Bayesian Optimization class based on a Gaussian Process surrogate model
+    ...
+
+    Attributes:
+    -----------
+        dim_input : int
+            Dimension of the input space
+        dim_output : int
+            Dimension of the output space
+        dimension : int
+            Number of the starting Training Points for the optimization
+        X_train : np.array
+            Starting training sample points written as column vector. 5 Training points of 2 dimensions -> shape(5,2)
+                                                             1 Training point of 1 dimensions -> shape(1,1)
+        Y_train : np.array
+            Starting training sample points written as column vector. 5 Training points of 2 dimensions -> shape(5,2)
+                                                            1 Training point of 1 dimensions -> shape(1,1)
+        settings : dict (default None)
+            Dictionary with the setting needed for the Bayesian Optimization
+        GP : GP object (default None)
+            Gaussian Process object as documented in GP.py
+        func : callable (default None)
+            Function to call to evaluate new points
+        _err : float (default 1e-4)
+            Error value to check between the sampling of the proposal
+        _it : int (default None)
+            Number of iterations utilized in the optimization run
+        _time_logger : time_log object
+            Handler for the time measurement
+        _helper : Observer object
+            Handler for the observations and the convergence plots
+        _old_dataset : list
+            List containing the starting training dataset
+
+    Settings
+    --------
+        The settings in this object are passed by a dictionary with the following keys:
+            "type": str
+                Set the type of optimization for the Acquisition Function. Right now there are 3 types of methods:
+                "DIRECT" , The Bayesian Optimization utilizes the Dividing Rectangle Technique to maximize the
+                           Acquisition Function
+                "BFGS" , The Bayesian Optimization utilizes the L-BFGS-B optimizer to maximize the Acquisition Function
+                "NAIVE" , The Bayesian Optimization utilizes some sampling techniques to calculate the Acquisition
+                          Function maxima
+            "n_search": int
+                Number of search of the optimizer or in the NAIVE case and for the NAIVE optimization
+                the number of sampling points generated per dimension
+            "boundaries": list
+                List of bounderies compatible with the input shape.
+                Ex: X: shape(3,6) , Boundaries=[[0,1] for i in range(6)]
+            "epsilon": float (standard should be 0.01)
+                Exploration-Exploitation trade off value
+            "iteration": int
+                Number of iteration of the optimization
+            "minimization": bool
+                Flag for choosing the minimization or maximization
+            "optimization": bool
+                Flag for the optimization of the Gaussian Process model
+            "n_restart": int
+                Number of restart in the hyperparameters of the Gaussian Process optimization routine
+            "sampling": callable or str
+                Sampling methods of the space: np.random.uniform
+                                               np.linspace
+                                               "LHS" : Quasi Random Latin Hypercube Sampling
+            "plot" : bool
+                Only for 1 Dimensional Bayesian Optimization.
+                 If True it plots the EI function and the GP model at each iteration step.
+
+    Example
+    ________
+        X=np.random.uniform(0,3,5)[:,None]
+        Y=np.sin(x)
+        GaussProcess=GP(X,Y)
+        f=np.sin
+        settings={"type":"NAIVE",
+                  "n_search": 10,
+                  "boundaries": [[0,3]],
+                  "epsilon": 0.01,
+                  "iteration": 10,
+                  "minimization":True,
+                  "optimization":True,
+                  "n_restart":10,
+                  "sampling":np.linspace
+                  "plot": True}
+        BayOpt=BayesianOptimization(X,Y,settings,GaussProcess,f)
+        BayOpt.run()
+    """
 
     def __init__(self, X: np.ndarray, Y: np.ndarray, settings=None, GP=None, func=None, err=1e-4):
-        self.__dim_input = X[0].shape[0]
-        self.__dim_output = Y[0].shape[0]
-        self.__dimension = X.shape[0]
-        self.__X = X
-        self.__Y = Y
-        self.__settings=settings
-        self.__GP = GP
-        self.__func = func
-        self.__err = err
-        self.__it = None
-        self.__time = time_log()
-        self.__observer=Observer("Bayesian Optimization")
-        self.__old_data = [X, Y]
+        self.dim_input = X[0].shape[0]
+        self.dim_output = Y[0].shape[0]
+        self.dimension = X.shape[0]
+        self.X_train = X
+        self.Y_train = Y
+        self.settings=settings
+        self.GP = GP
+        self.func = func
+        self._err = err
+        self._it = None
+        self._time_logger = time_log()
+        self._helper = Observer("Bayesian Optimization")
+        self._old_dataset = [X, Y]
         #Fare verbose
 
     def run(self):
-        print(self.__settings)
+        """
+        Handler for running an optimization task
+        :return: [X_array,Y_array] of the optimization
+        """
+        #print(self.settings)
         try:
-            if self.__settings is not None:
-                 copy_settings=self.__settings
+            if self.settings is not None:
+                 copied_settings=copy.copy(self.settings)
                  bay_opt_methods= {"DIRECT":self.bayesian_run_DIRECT,
                                      "BFGS":self.bayesian_run_BFGL,
                                     "NAIVE": self.bayesian_run_min}
 
                  optimizer=bay_opt_methods[self.get_info("type")]
-                 self.__observer.type=self.get_info("type")
-                 del copy_settings["type"]
-                 print(copy_settings)
-                 return optimizer(**copy_settings)
+                 self._helper.type=self.get_info("type")
+                 del copied_settings["type"]
+                 return optimizer(**copied_settings)
             else:
                 print("Settings not specified")
+                raise ValueError
         except BaseException as b:
-            print("Error on inizialing the Bayesian Optimization\n",b)
+            print("Error on inizialing the Bayesian Optimization\n")
+            raise(b)
+
+    def suggest_location(self):
+        """
+        Method to suggest the new sample points without calling the evaluation routine
+        :return: np.array
+            Proposal for the new set of points to sample the function
+        It create a shallow copy of the BayesianOptimization object with a _no_evaluation flag that will be eliminated
+        at the end of the run
+        """
+        # self._no_evaluation=True
+        # self.settings["iteration"]=1
+        tmp=copy.copy(self)
+        tmp._no_evaluation=True
+        proposal = tmp.run()
+        del tmp
+        return proposal
+
 
     def get_info(self,key):
-        return self.__settings[key]
+        return self.settings[key]
 
     def next_sample_validation(self, new_sample, boundaries):
-        #if np.any(np.all(np.abs(new_sample - self.get_X()) < self.get_err(), axis=1)):
-        #if np.sqrt(np.sum((self.get_X()[-1, :] - new_sample)**2))< self.get_err():
         if np.any(np.sqrt(np.sum((self.get_X() - new_sample) ** 2,axis=1)) < self.get_err()):
             print("+++++++++++++++++++++++++++++++++++++++++++")
             print(new_sample)
@@ -160,15 +266,15 @@ class BayesianOptimization():
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
                 print("COMPUTING:", predicted_best_X)
-                predicted_best_Y = self.compute_new_sample(predicted_best_X)
-
-                self.observe(predicted_best_Y, predicted_best_X)
-
-                print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
-
-                # Augment the dataset of the BO and the GP objects
-                self.augment_XY(predicted_best_X, predicted_best_Y)
-                gp.augment_XY(predicted_best_X, predicted_best_Y)
+                if hasattr(self, "_no_evaluation"):
+                    return predicted_best_X
+                else:
+                    predicted_best_Y = self.compute_new_sample(predicted_best_X)
+                    self.observe(predicted_best_Y, predicted_best_X)
+                    print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
+                    # Augment the dataset of the BO and the GP objects
+                    self.augment_XY(predicted_best_X, predicted_best_Y)
+                    gp.augment_XY(predicted_best_X, predicted_best_Y)
 
             if minimization:
                 best_index = np.argmin(self.get_Y())
@@ -221,15 +327,19 @@ class BayesianOptimization():
 
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
-                predicted_best_Y = self.compute_new_sample(predicted_best_X)
 
-                self.observe(predicted_best_Y, predicted_best_X)
+                if hasattr(self, "_no_evaluation"):
+                    return predicted_best_X
+                else:
+                    predicted_best_Y = self.compute_new_sample(predicted_best_X)
 
-                print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
+                    self.observe(predicted_best_Y, predicted_best_X)
 
-                # Augment the dataset of the BO and the GP objects
-                self.augment_XY(predicted_best_X, predicted_best_Y)
-                gp.augment_XY(predicted_best_X, predicted_best_Y)
+                    print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
+
+                    # Augment the dataset of the BO and the GP objects
+                    self.augment_XY(predicted_best_X, predicted_best_Y)
+                    gp.augment_XY(predicted_best_X, predicted_best_Y)
 
             if minimization:
                 best_index = np.argmin(self.get_Y())
@@ -303,7 +413,7 @@ class BayesianOptimization():
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
             tm = self.get_time_logger()
-            self.__it = iteration
+            self._it = iteration
             boundaries_array = np.asarray(boundaries)
 
             if minimization:
@@ -340,17 +450,15 @@ class BayesianOptimization():
                     # Check if it is a duplicate
                     predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
 
-                    if self.get_func() is not None:
+                    if hasattr(self, "_no_evaluation"):
+                        return predicted_best_X
+                    else:
                         predicted_best_Y = self.compute_new_sample(predicted_best_X)
-
                         self.observe(predicted_best_Y, predicted_best_X)
                         # Augment the dataset of the BO and the GP objects
                         self.augment_XY(predicted_best_X, predicted_best_Y)
                         gp.augment_XY(predicted_best_X, predicted_best_Y)
 
-                    else:
-                        raise ValueError('Function not defined. If you are running an optimization' +
-                                         ' with an external function use the command bayesian_run_min_single')
 
                 best_index = np.argmin(self.get_Y())
                 tm.time_end()
@@ -378,11 +486,8 @@ class BayesianOptimization():
         new_prediction = search_grid[np.argmax(improvement)]
 
         if plot:
-            args = [self.get_X(), self.get_Y(), search_grid, mean, variance, improvement]
-            plt = plot_BayOpt(*args)
-            plt.axvline(new_prediction, label="Suggested Point", linestyle="--",
-                        color="red", alpha=0.4)
-            plt.legend()
+            args = [self.get_X(), self.get_Y(), search_grid, mean, variance, improvement, new_prediction]
+            fig,plt,ax = plot_BayOpt(*args)
             plt.show()
 
         return new_prediction, improvement, best
@@ -407,7 +512,7 @@ class BayesianOptimization():
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
             tm = self.get_time_logger()
-            self.__it = iteration
+            self._it = iteration
             boundaries_array = np.asarray(boundaries)
 
             for i in range(1, iteration + 1):
@@ -438,17 +543,20 @@ class BayesianOptimization():
 
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
-                predicted_best_Y = self.compute_new_sample(predicted_best_X)
-                self.__observer.observe(predicted_best_Y, predicted_best_X)
+                if hasattr(self, "_no_evaluation"):
+                    return predicted_best_X
+                else:
+                    predicted_best_Y = self.compute_new_sample(predicted_best_X)
+                    self._helper.observe(predicted_best_Y, predicted_best_X)
 
-                # Augment the dataset of the BO and the GP objects
-                self.augment_XY(predicted_best_X, predicted_best_Y)
-                gp.augment_XY(predicted_best_X, predicted_best_Y)
+                    # Augment the dataset of the BO and the GP objects
+                    self.augment_XY(predicted_best_X, predicted_best_Y)
+                    gp.augment_XY(predicted_best_X, predicted_best_Y)
 
             best_index = np.argmax(self.get_Y())
             tm.time_end()
             # log_bo(self.__str__())
-            self.__observer.plot()
+            self._helper.plot()
 
             return self.get_X()[best_index], self.get_Y()[best_index]
 
@@ -488,7 +596,7 @@ class BayesianOptimization():
         else:
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
-            self.__it = None
+            self._it = None
             boundaries_array = np.asarray(boundaries)
 
             print("Generating surrogate model\n")
@@ -545,7 +653,7 @@ class BayesianOptimization():
         else:
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
-            self.__it = None
+            self._it = None
             boundaries_array = np.asarray(boundaries)
 
             print("Generating surrogate model\n")
@@ -595,51 +703,51 @@ class BayesianOptimization():
                 raise ValueError(f'Data dimensions are wrong: {dataset.shape} != {new_data.shape}')
 
     def augment_X(self, new_data):
-        self.__X = self.augment_dataset(self.get_X(), new_data)
+        self.X_train = self.augment_dataset(self.get_X(), new_data)
 
     def augment_Y(self, new_data):
-        self.__Y = self.augment_dataset(self.get_Y(), new_data)
+        self.Y_train = self.augment_dataset(self.get_Y(), new_data)
 
     def augment_XY(self, new_data_X, new_data_Y):
         self.augment_X(new_data_X)
         self.augment_Y(new_data_Y)
 
     def set_func(self, func):
-        self.__func = func
+        self.func = func
 
     def get_X(self):
-        return self.__X
+        return self.X_train
 
     def get_Y(self):
-        return self.__Y
+        return self.Y_train
 
     def get_GP(self):
-        return self.__GP
+        return self.GP
 
     def get_func(self):
-        return self.__func
+        return self.func
 
     def get_dim_data(self):
-        return self.__dimension
+        return self.dimension
 
     def get_dim_inputspace(self):
-        return self.__dim_input
+        return self.dim_input
 
     def get_dim_outspace(self):
-        return self.__dim_output
+        return self.dim_output
 
     def get_time_logger(self):
-        return self.__time
+        return self._time_logger
 
     def get_err(self):
-        return self.__err
+        return self._err
 
     def set_err(self, err):
-        self.__err = err
+        self._err = err
 
     def __str__(self):
         header = "============================================================================\n"
-        old_data = f'Bayesian Run initialized with: {self.__it} iterations\nDATASET\n{self.__old_data}\n'
+        old_data = f'Bayesian Run initialized with: {self._it} iterations\nDATASET\n{self._old_dataset}\n'
         old_data += "----------------------------------------------------------------------------\n\n"
         time = f'Time: {str(self.get_time_logger().total())}\n\n'
         count = 0
@@ -718,7 +826,7 @@ class BayesianOptimization():
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
             tm = self.get_time_logger()
-            self.__it = iteration
+            self._it = iteration
             boundaries_array = np.asarray(boundaries)
 
             error = []
@@ -779,7 +887,7 @@ class BayesianOptimization():
             gp = self.get_GP()
             dim = self.get_dim_inputspace()
             tm = self.get_time_logger()
-            self.__it = iteration
+            self._it = iteration
             boundaries_array = np.asarray(boundaries)
 
             error = []
@@ -841,10 +949,10 @@ class BayesianOptimization():
             return error, val
 
     def observe(self,value, propose):
-        self.__observer.observe(value,propose)
+        self._helper.observe(value, propose)
 
     def observer_plot(self):
-        self.__observer.plot()
+        self._helper.plot()
 
 
 def Expected_Improvement_max(new_point, mean, variance, epsilon):

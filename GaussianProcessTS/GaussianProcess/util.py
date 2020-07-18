@@ -23,8 +23,33 @@ def log_bo(bayOpt, path):
 
 
 class time_log():
+    """
+    Time logger class to being able to take the time required for an optimization.
+    ...
+
+    Attributes:
+    -----------
+        start : float (defalt __call__)
+        intervall : list (default start)
+        end : float (default None)
+        count : int (default 0)
+
+    Methods
+    --------
+    """
 
     def __init__(self, start=tm.time()):
+        """
+        When created it created the starting time for the measures
+        start : float (defalt __call__)
+            Time of the call
+        intervall : list (default start)
+            List of the different calls
+        end : float (default None)
+            Time of the end
+        count : int (default 0)
+            Counter of the calls
+        """
         self.start = start
         self.intervall = [start]
         self.end = None
@@ -35,6 +60,9 @@ class time_log():
         self.count += 1
 
     def time_end(self):
+        """
+        Compute the ending e final time
+        """
         fin=tm.time()
         self.time(t=fin)
         self.end = fin
