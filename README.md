@@ -8,8 +8,16 @@ Particle Dynamics force field for a complex system of polymers chains functional
 In this little package right now there are 3 ways to run an optimization task with Gaussian Processes:
 
 -NAIVE : AkA sampling the acquisition function with a grid of some kind or a quasi random methods as LHS
+
 -BFGS : Find the Maxima of the Acquisition function by using the L-BFGS-B optimizer
+
 -DIRECT : Find the Maxiam of the Acquisition function by using the DIRECT optimizer
+
+# TODO
+
+-An integration with LAMMPS using the pyLammps routine
+
+-Tutorials and Examples
 
 
 
