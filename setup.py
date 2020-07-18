@@ -10,7 +10,7 @@ setup(
     #packages=['GaussianProcessTS', 'GaussianProcessTS.GaussianProcess', 'GaussianProcessTS.GaussianProcess.Kernel'],
     packages=find_packages(),
     url='',
-    license='',
+    license='MIT',
     author_email='',
     description='Bayesian Optimization with Gaussian Process as surrogate model',
     long_description=read_me_description,
