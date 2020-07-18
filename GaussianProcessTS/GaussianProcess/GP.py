@@ -1,12 +1,11 @@
 import numpy as np
-from scipy.linalg import solve
-from .Kernel.Kernel import Kernel
-from .Kernel.RBF import RBF
-from .Plotting import plot_BayOpt
 from scipy.optimize import minimize
-from scipy.linalg import cho_solve, cholesky
-from sklearn.model_selection import train_test_split, KFold
-# from smt.sampling_methods import LHS
+from sklearn.model_selection import KFold
+
+from .Kernel import Kernel
+from .Kernel import RBF
+from .Plotting import plot_BayOpt
+
 
 class GP():
     """

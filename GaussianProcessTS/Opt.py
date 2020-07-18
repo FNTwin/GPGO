@@ -1,13 +1,13 @@
+import copy
+import matplotlib.pyplot as plt
 import numpy as np
-from GaussianProcess.GP import GP, generate_grid
-from GaussianProcess.Plotting import plot_BayOpt
-from GaussianProcess.util import time_log,  Observer
+from GaussianProcess import GP, generate_grid, time_log, plot_BayOpt, Observer
 from scipy.optimize import minimize
 from scipy.stats import norm
+
 from DIRECT import solve
-import matplotlib.pyplot as plt
 from smt.sampling_methods import LHS
-import copy
+
 
 class BayesianOptimization():
     """
