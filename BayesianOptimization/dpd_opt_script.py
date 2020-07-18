@@ -1,6 +1,6 @@
-from GaussianProcessTS.GaussianProcess.GP import GP, generate_grid
-from GaussianProcessTS.GaussianProcess.Kernel.RBF import RBF
-from GaussianProcessTS.Opt import BayesianOptimization
+from BayesianOptimization.GaussianProcess.GP import GP, generate_grid
+from BayesianOptimization.GaussianProcess.Kernel.RBF import RBF
+from BayesianOptimization.Opt import BayesianOptimization
 import numpy as np
 import os
 import argparse
