@@ -11,7 +11,7 @@ In this little package right now there are 3 ways to run an optimization task wi
 
 -BFGS : Find the Maxima of the Acquisition function by using the L-BFGS-B optimizer
 
--DIRECT : Find the Maxiam of the Acquisition function by using the DIRECT optimizer
+-DIRECT : Find the Maxiam of the Acquisition function by using the DIRECT optimizer (need the DIRECT python package)
 
 # TODO
 
