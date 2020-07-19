@@ -1,4 +1,4 @@
-# Bayesian-Optimization
+# GPGO - Gaussian Process GO
 
 My own implementation of Bayesian Black box Optimization with Gaussian Process as a surrogate model.
 It is still in development as I'm using it for my Master degree thesis to achieve a bottom up optimization of the Dissipative
