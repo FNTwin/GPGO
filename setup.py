@@ -8,7 +8,7 @@ setup(
     version='0.1',
     author='Cristian Gabellini',
     packages=find_packages(),
-    url='https://github.com/FNTwin/Bayesian-Optimization',
+    url='https://github.com/FNTwin/GPGO',
     download_url = 'https://github.com/FNTwin/GPGO/archive/BayOpt.tar.gz' ,
     license='MIT',
     description='Bayesian Optimization with Gaussian Process as surrogate model',
