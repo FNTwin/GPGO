@@ -1,6 +1,6 @@
 from GPGO.GaussianProcess.GP import GP, generate_grid
 from GPGO.GaussianProcess.Kernel.RBF import RBF
-from GPGO.Opt import BayesianOptimization
+from GPGO.Opt_old import BayesianOptimization
 import numpy as np
 import os
 import argparse

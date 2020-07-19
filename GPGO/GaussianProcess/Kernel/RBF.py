@@ -1,9 +1,9 @@
 from .Kernel import Kernel
-from numpy import sum, exp
+from numpy import exp
 from numpy.linalg import norm
-from numpy import ndarray
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 class RBF(Kernel):
     """
@@ -22,7 +22,7 @@ class RBF(Kernel):
     -----------
     """
 
-    def __init__(self, sigma_l=1., l=1. , noise=1e-6, gradient=False):
+    def __init__(self, sigma_l=1., l=1., noise=1e-6, gradient=False):
         """
         sigma_l  : float (default 1.)
             float value for the variance of the Kernel
@@ -39,10 +39,10 @@ class RBF(Kernel):
 
     def kernel_var(self):
         sigma, _, noise = self.gethyper()
-        return sigma ** 2 + noise**2
+        return sigma ** 2 + noise ** 2
 
     @staticmethod
-    def kernel_(sigma,l,noise,pair_matrix):
+    def kernel_(sigma, l, noise, pair_matrix):
         """
         Static method for computing the Graham Matrix using the kernel, it is require to be defined as it
         is passed in the GP module to optimize the hyperparameters.
@@ -57,12 +57,12 @@ class RBF(Kernel):
         :return: NxM np.array
             Graham matrix of the Kernel
         """
-        K=sigma ** 2 * np.exp(-.5 / l ** 2 * pair_matrix)
-        K[np.diag_indices_from(K)] += noise**2
+        K = sigma ** 2 * np.exp(-.5 / l ** 2 * pair_matrix)
+        K[np.diag_indices_from(K)] += noise ** 2
         return K
 
     @staticmethod
-    def kernel_eval_grad_(sigma,l,noise,pair_matrix):
+    def kernel_eval_grad_(sigma, l, noise, pair_matrix):
         """
             Static method for computing the derivates of the Kernel, it is require to be defined if __eval_grad is set
             to True as it is passed in the GP module to optimize the hyperparameters with the use of the gradient.
@@ -77,13 +77,13 @@ class RBF(Kernel):
             :return: NxM np.array
                 Graham matrix of the Kernel
         """
-        K= np.exp(-.5 / l ** 2 * pair_matrix)
+        K = np.exp(-.5 / l ** 2 * pair_matrix)
         K_norm = sigma ** 2 * K
         K_norm[np.diag_indices_from(K)] += noise ** 2
-        K_1=2*sigma*K
-        K_2=sigma**2 * K * pair_matrix / l**3
-        K_3=np.eye(pair_matrix.shape[0])*noise*2
-        return (K_norm,K_1,K_2,K_3)
+        K_1 = 2 * sigma * K
+        K_2 = sigma ** 2 * K * pair_matrix / l ** 3
+        K_3 = np.eye(pair_matrix.shape[0]) * noise * 2
+        return (K_norm, K_1, K_2, K_3)
 
     def product(self, x1, x2=0):
         """
@@ -92,9 +92,8 @@ class RBF(Kernel):
         x2 : np.array (default 0)
         :return: kernel value between two data point x1,x2
         """
-        sigma, l , noise= self.gethyper()
-        return sigma**2 * exp((-.5 * (norm(x1 - x2,axis=1) ** 2)) / l**2)
-
+        sigma, l, noise = self.gethyper()
+        return sigma ** 2 * exp((-.5 * (norm(x1 - x2, axis=1) ** 2)) / l ** 2)
 
     def kernel_product(self, X1, X2):
         """
@@ -107,7 +106,7 @@ class RBF(Kernel):
         return : np.array of dimension NxM
             return the Graham Matrix of the Kernel
         """
-        sigma, l , noise= self.gethyper()
+        sigma, l, noise = self.gethyper()
         dist = np.sum(X1 ** 2, axis=1)[:, None] + np.sum(X2 ** 2, axis=1) - 2 * np.dot(X1, X2.T)
         return sigma ** 2 * np.exp(-.5 / l ** 2 * dist)
 
@@ -115,8 +114,8 @@ class RBF(Kernel):
         """
         Plot the Kernel in 1 Dimension
         """
-        X=np.linspace(-4,4,100)
-        plt.plot(X,self.product(X[:,None]))
+        X = np.linspace(-4, 4, 100)
+        plt.plot(X, self.product(X[:, None]))
         plt.show()
 
     def sethyper(self, sigma, l, noise):
@@ -128,7 +127,7 @@ class RBF(Kernel):
         """
         self.hyper["sigma"] = sigma
         self.hyper["l"] = l
-        self.hyper["noise"]= noise
+        self.hyper["noise"] = noise
 
     '#Get methods'
 
@@ -148,6 +147,6 @@ class RBF(Kernel):
         return self.eval_grad
 
     def __str__(self):
-        kernel_info=f'Kernel type: {self.getsubtype()}\n'
-        hyper_info=f'Hyperparameters: {self.gethyper_dict()}\n\n'
-        return kernel_info+hyper_info
+        kernel_info = f'Kernel type: {self.getsubtype()}\n'
+        hyper_info = f'Hyperparameters: {self.gethyper_dict()}\n\n'
+        return kernel_info + hyper_info

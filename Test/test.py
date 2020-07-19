@@ -6,6 +6,7 @@ from GPGO import RBF
 from GPGO import BayesianOptimization
 from GPGO.GaussianProcess import log_gp
 from GPGO.GaussianProcess import generate_grid
+import logging
 
 def test_GP_1D(optimize=True):
     #x =  np.arange(-3, 5, 1)[:, None]
@@ -125,14 +126,15 @@ def test_minimization_2D():
     gp = GP( X, Z, RBF(gradient=False))
     gp.fit()
     settings = {"type": "BFGS",
+                "ac_type": "UCB",
                 "n_search": 10,
                 "boundaries": boundaries,
                 "epsilon": 0.01,
-                "iteration": 50,
+                "iteration": 40,
                 "minimization": True,
                 "optimization": True,
                 "n_restart": 10,
-                "sampling": np.random.uniform}
+                "sampling": np.linspace}
 
     BayOpt = BayesianOptimization(X,Z, settings, gp, f)
     best=BayOpt.run()
@@ -152,11 +154,12 @@ def test_minimization_2D():
 def test_minimization_1D():
 
 
-    X = np.random.uniform(0,1.2,3)[:,None]
+    X = np.random.uniform(-3,1,3)[:,None]
 
 
     def f(X):
-        return -(1.4 - 3 * X) * np.sin(18 * X)
+        #return -(1.4 - 3 * X) * np.sin(18 * X)
+        return np.sin(X)
         #return (6* X - 2)**2 * np.sin (12 * X - 4)
         #return 4 * 100 * ((.9 / X) ** 12 - (.9 / X) ** 6)
 
@@ -168,16 +171,18 @@ def test_minimization_1D():
     gp = GP(X, Z, RBF(gradient=False), normalize_y=True)
     gp.set_boundary([[1e-4,0.5]])
     settings={"type":"BFGS",
-              "n_search": 4,
-              "boundaries": [[0,1.2]],
+              "ac_type":"UCB",
+              "n_search": 1000,
+              "boundaries": [[-3,3]],
               "epsilon": 0.01,
-              "iteration": 10,
-              "minimization":True,
+              "iteration": 5,
+              "minimization": False,
               "optimization":True,
               "n_restart": 10,
               "sampling":np.linspace}
 
-    BayOpt = BayesianOptimization(X, Z, settings, gp, noise)
+    BayOpt = BayesianOptimization(X, Z, settings, gp, f)
+    BayOpt.set_plotter()
     best=BayOpt.run()
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
     """best = BayOpt.bayesian_run_min(250,
@@ -189,14 +194,14 @@ def test_minimization_1D():
                                    epsilon=0.01,
                                    sampling=np.linspace)"""
 
-    #print("bay:", best)
-    print(BayOpt)
+    print("bay:", best)
+    #print(BayOpt)
 
 
 def test_Hartmann_6D():
     dim = 6
     points = 10
-    x = np.random.uniform(0, 1, (300, 6))
+    x = np.random.uniform(0, 1, (10, 6))
 
 
     def hartmann_6D(x):
@@ -243,7 +248,7 @@ def test_Hartmann_6D():
 
     n_p = 10
 
-    best = BayOpt.suggest_location()
+    best = BayOpt.run()
 
     print("Number of points sampled in an iteration: ", n_p ** dim)
     print("bay:", best)
@@ -267,7 +272,7 @@ def test_rosen(n):
                 "boundaries": boundaries,
                 "epsilon": 0.01,
                 "iteration": 20,
-                "minimization": True,
+                "minimization": False,
                 "optimization": True,
                 "n_restart": 10,
                 "sampling": np.random.uniform}
@@ -300,7 +305,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_minimization_1D()
+test_minimization_2D()
 print("Finished: ", time.time() - a)
 
 

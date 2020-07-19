@@ -5,7 +5,7 @@ with open("README.md", "r") as file:
 
 setup(
     name='GPGO',
-    version='0.1.1',
+    version='0.1.2',
     author='Cristian Gabellini',
     packages=find_packages(),
     url='https://github.com/FNTwin/GPGO',

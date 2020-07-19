@@ -9,6 +9,8 @@ from .Kernel import RBF
 from .Plotting import plot_BayOpt
 
 logger = logging.getLogger(__name__)
+
+
 class GP():
     """
     Gaussian Process class
@@ -95,11 +97,11 @@ class GP():
 
         try:
             if self._stat:
-                K=self.get_cov()
+                K = self.get_cov()
             else:
                 K = np.linalg.cholesky(kernel)
 
-            marg = - .5 * Y.T.dot(np.linalg.lstsq(K.T, np.linalg.lstsq(K, Y,rcond=None)[0],rcond=None)[0]) \
+            marg = - .5 * Y.T.dot(np.linalg.lstsq(K.T, np.linalg.lstsq(K, Y, rcond=None)[0], rcond=None)[0]) \
                    - .5 * np.log(np.diag(K)).sum() \
                    - .5 * K.shape[0] * np.log(2 * np.pi)
 
@@ -146,7 +148,7 @@ class GP():
 
         try:
             K = np.linalg.cholesky(kernel)
-            marg = - .5 * Y.T.dot(np.linalg.lstsq(K.T, np.linalg.lstsq(K, Y,rcond=None)[0],rcond=None)[0]) \
+            marg = - .5 * Y.T.dot(np.linalg.lstsq(K.T, np.linalg.lstsq(K, Y, rcond=None)[0], rcond=None)[0]) \
                    - .5 * np.log(np.diag(K)).sum() \
                    - .5 * K.shape[0] * np.log(2 * np.pi)
 
@@ -187,12 +189,12 @@ class GP():
 
         logger.debug("GRADIENT", hyper)
         hyper = np.squeeze(hyper)
-        m_g = lambda h:  -(.5 * Y.T.dot(K.dot(h.dot(K.dot(Y)))) - .5 * np.diag(K.dot(h)).sum())
+        m_g = lambda h: -(.5 * Y.T.dot(K.dot(h.dot(K.dot(Y)))) - .5 * np.diag(K.dot(h)).sum())
 
         kernel = self.kernel.kernel_eval_grad_(*hyper, pair_matrix)
         K = np.linalg.inv(kernel[0])
         try:
-            grad_kernel=[m_g(i) for i in kernel[1:]]
+            grad_kernel = [m_g(i) for i in kernel[1:]]
 
         except np.linalg.LinAlgError as exc:
             if verbose:
@@ -259,11 +261,11 @@ class GP():
         args = (constrains, n_points, function, verbose)
         new = self.grid_search_optimization(*args)
         self.set_marg(new["marg"])
-        #fare un buon metodo set hyper
+        # fare un buon metodo set hyper
         self.set_hyper(*new["hyper"])
         self.fit()
 
-    def optimize(self,  n_restarts=10, optimizer="L-BFGS-B", verbose=False):
+    def optimize(self, n_restarts=10, optimizer="L-BFGS-B", verbose=False):
         """
         Optimization Routine for the hyperparameters of the GP by Minimizing the negative log Marginal Likelihood.
         n_restarts : int (default 10)
@@ -283,9 +285,9 @@ class GP():
         self.log_marginal_likelihood()
         old_marg = self.get_marg()
         old_hyper = self.get_kernel().gethyper()
-        hyper_dim=len(old_hyper)
+        hyper_dim = len(old_hyper)
 
-        boundaries=self.get_boundary()
+        boundaries = self.get_boundary()
         eval_grad = self.get_kernel().get_eval()
 
         logger.debug("Starting Log Marginal Likelihood Value: ", old_marg)
@@ -297,7 +299,7 @@ class GP():
         new_marg = None
         it = 0
 
-        #Optimization Loop
+        # Optimization Loop
         for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1], size=(n_restarts, hyper_dim)):
             it += 1
 
@@ -308,7 +310,7 @@ class GP():
                                                                           pair_matrix=pair_matrix,
                                                                           verbose=verbose,
                                                                           hyper=(np.squeeze(
-                                                                                h.reshape(-1, hyper_dim)))),
+                                                                              h.reshape(-1, hyper_dim)))),
                            x0=i,
                            bounds=((1e-5, None), (1e-5, None), (1e-5, None)),
                            method=self.__optimizer,
@@ -317,16 +319,20 @@ class GP():
             if not res.success:
                 continue
 
-            if new_marg is None or res.fun[0] < new_marg:
-                new_marg = res.fun[0]
-                new_hyper = res.x
+            try:
+                if new_marg is None or res.fun[0] < new_marg:
+                    new_marg = res.fun[0]
+                    new_hyper = res.x
+            except:
+                pass
+                logger.info(res.fun)
 
-        #If the optimization doesn't converge set the value to old parameters
+        # If the optimization doesn't converge set the value to old parameters
         if new_marg is None:
             if verbose:
                 logger.warning("Using Old Log Marg Likelihood")
-            new_marg=old_marg
-            new_hyper=old_hyper
+            new_marg = old_marg
+            new_hyper = old_hyper
 
         logger.info("New Log Marginal Likelihood Value: ", -new_marg, new_hyper)
         # Update and fit the new gp model
@@ -348,7 +354,7 @@ class GP():
             self._stat = True
 
         except np.linalg.LinAlgError as exc:
-            raise ValueError("Cholesky decomposition encountered a numerical error\nIncrease the Noise Level\n",exc)
+            raise ValueError("Cholesky decomposition encountered a numerical error\nIncrease the Noise Level\n", exc)
 
     def predict(self, X):
         """
@@ -369,7 +375,7 @@ class GP():
             mean = np.dot(inv_cov.T, np.linalg.solve(self.get_cov(), self.get_Y()))
             # general case
             # Variance
-            #var = ker.gethyper()[0] ** 2 + ker.gethyper()[2] - np.sum(inv_cov ** 2, axis=0)
+            # var = ker.gethyper()[0] ** 2 + ker.gethyper()[2] - np.sum(inv_cov ** 2, axis=0)
             var = ker.kernel_var() - np.sum(inv_cov ** 2, axis=0)
             var_neg = var < 0
             var[var_neg] = 0.
@@ -386,7 +392,7 @@ class GP():
             # DESTANDARDIZE
             y_mean = (self._std_y * y_mean + self._mean_y)
             # VARIANCE
-            #var = ker.gethyper()[0] ** 2 + self.get_noise() - np.sum(inv_cov ** 2, axis=0)
+            # var = ker.gethyper()[0] ** 2 + self.get_noise() - np.sum(inv_cov ** 2, axis=0)
             var = ker.kernel_var() - np.sum(inv_cov ** 2, axis=0)
             # REMOVE VARIANCE VALUE LESS THAN 0
             var_neg = var < 0
@@ -407,7 +413,6 @@ class GP():
         args = [self.get_X(), self.get_Y(), X, mean, var]
         plt = plot_BayOpt(*args)
         plt.show()
-
 
     def prepare_fold(self, n):
         kf = KFold(n_splits=n)
@@ -437,7 +442,6 @@ class GP():
             cv_gp = GP(X_train, Y_train, kernel=RBF(*hyper))
             RMSE += GP.RMSE(cv_gp, self.get_X(), self.get_Y(), index[i][1])
         return RMSE / n_fold
-
 
     def augment_dataset(self, dataset, new_data):
         """
@@ -507,7 +511,7 @@ class GP():
             self.__boundary = np.asarray([[1e-4, 10] for i in range(len(self.get_kernel().gethyper()))])
             return self.__boundary
 
-    def set_boundary(self,array):
+    def set_boundary(self, array):
         """
         Create the boundaries for the hyperparameters optimization
         :param array: list
@@ -522,13 +526,12 @@ class GP():
         set_boundary([[1e-5,4]]) on RBF ---> boundaries: (1e-5,4),(1e-5,4),(1e-5,4)
         set_boundary([[1e-5,4],[1,10],[2,3]]) on RBF ---> boundaries: (1e-5,4),(1,10),(2,3)
         """
-        n=len(self.get_kernel().gethyper())
+        n = len(self.get_kernel().gethyper())
 
-        if len(array)==1:
-            self.__boundary=np.asarray([array[0] for i in range(n)])
-        if len(array)==n:
+        if len(array) == 1:
+            self.__boundary = np.asarray([array[0] for i in range(n)])
+        if len(array) == n:
             self.__boundary = np.asarray(array)
-
 
     def set_hyper(self, sigma=None, l=None, noise=None):
 
