@@ -1,4 +1,5 @@
 import copy
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from .GaussianProcess import GP, generate_grid, time_log, plot_BayOpt, Observer
@@ -8,7 +9,7 @@ from scipy.stats import norm
 from DIRECT import solve
 from smt.sampling_methods import LHS
 
-
+logger = logging.getLogger(__name__)
 class BayesianOptimization():
     """
     Bayesian Optimization class based on a Gaussian Process surrogate model
@@ -133,10 +134,10 @@ class BayesianOptimization():
                  del copied_settings["type"]
                  return optimizer(**copied_settings)
             else:
-                print("Settings not specified")
+                logger.warning("Settings not specified")
                 raise ValueError
         except BaseException as b:
-            print("Error on inizialing the Bayesian Optimization\n")
+            logger.warning("Error on inizialing the Bayesian Optimization\n")
             raise(b)
 
     def suggest_location(self):
@@ -161,9 +162,9 @@ class BayesianOptimization():
 
     def next_sample_validation(self, new_sample, boundaries):
         if np.any(np.sqrt(np.sum((self.get_X() - new_sample) ** 2,axis=1)) < self.get_err()):
-            print("+++++++++++++++++++++++++++++++++++++++++++")
-            print(new_sample)
-            print(new_sample.shape[0])
+            logger.debug("+++++++++++++++++++++++++++++++++++++++++++")
+            logger.debug(new_sample)
+            logger.debug(new_sample.shape[0])
             return np.random.uniform(boundaries[:, 0], boundaries[:, 1], (1, self.get_dim_inputspace()))
 
         else:
@@ -193,7 +194,7 @@ class BayesianOptimization():
         ub=boundaries[:,1]
         #maxf= 80000
         x, val, _ = solve(DIRECT_wrapper(f), lb, ub,  maxT=max_iter, algmethod=0)
-        print("DIRECT:" ,x, val)
+        logger.info("DIRECT:" ,x, val)
         return x
 
     def Expected_improment_dir(self, point):
@@ -251,13 +252,13 @@ class BayesianOptimization():
             boundaries_array = np.asarray(boundaries)
 
             for i in range(iteration):
-                print("iteration: ", i+1)
+                logger.debug("iteration: ", i+1)
 
                 #search_grid = generate_grid(dim, n_search, boundaries, function=sampling)
 
                 if optimization:
                     gp.optimize(n_restarts=n_restart)
-                    print("Optimization: ", i, " completed")
+                    logger.info("Optimization: ", i, " completed")
 
                 gp.fit()
 
@@ -265,13 +266,13 @@ class BayesianOptimization():
 
                 # Check if it is a duplicate
                 predicted_best_X = self.next_sample_validation(predicted_best_X, boundaries_array)
-                print("COMPUTING:", predicted_best_X)
+                logger.info("COMPUTING:", predicted_best_X)
                 if hasattr(self, "_no_evaluation"):
                     return predicted_best_X
                 else:
                     predicted_best_Y = self.compute_new_sample(predicted_best_X)
                     self.observe(predicted_best_Y, predicted_best_X)
-                    print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
+                    logger.info(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
                     # Augment the dataset of the BO and the GP objects
                     self.augment_XY(predicted_best_X, predicted_best_Y)
                     gp.augment_XY(predicted_best_X, predicted_best_Y)
@@ -309,7 +310,7 @@ class BayesianOptimization():
             boundaries_array = np.asarray(boundaries)
 
             for i in range(1, iteration + 1):
-                print("Iteration: ", i)
+                logger.debug("Iteration: ", i)
                 # Generate dimensional Grid to search
                 #search_grid = generate_grid(dim, n_search, boundaries, function=sampling)
 
@@ -317,7 +318,7 @@ class BayesianOptimization():
                 gp.fit()
                 if optimization:
                     gp.optimize(n_restarts=n_restart)
-                    print("Optimization: ", i, " completed")
+                    logger.info("Optimization: ", i, " completed")
 
                 # Compute the EI and the new theoretical best
                 """predicted_best_X = self.propose_new_sample_loc(self.Expected_improment, gp,
@@ -335,7 +336,7 @@ class BayesianOptimization():
 
                     self.observe(predicted_best_Y, predicted_best_X)
 
-                    print(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
+                    logger.info(i, "It: ", predicted_best_X, " , Y: ", predicted_best_Y)
 
                     # Augment the dataset of the BO and the GP objects
                     self.augment_XY(predicted_best_X, predicted_best_Y)
@@ -419,7 +420,7 @@ class BayesianOptimization():
             if minimization:
 
                 for i in range(1, iteration + 1):
-                    print("Iteration: ", i)
+                    logger.debug("Iteration: ", i)
                     # Generate dimensional Grid to search
                     if sampling== "LHS":
                         lhs_generator= LHS(xlimits=boundaries_array)
@@ -433,11 +434,11 @@ class BayesianOptimization():
                     if optimization:
                         #gp.optimize(constrains=opt_constrain, n_points=n_opt_points, function=np.random.uniform)
                         gp.optimize(n_restarts=n_restart)
-                        print("Optimization: ", i, " completed")
+                        logger.info("Optimization: ", i, " completed")
 
                     mean, var = gp.predict(search_grid)
 
-                    print("Surrogate Model generated: ", i)
+                    logger.info("Surrogate Model generated: ", i)
 
                     # Compute the EI and the new theoretical best
                     predicted_best_X, improvements, best_value = self.optimization_min(search_grid,
@@ -516,7 +517,7 @@ class BayesianOptimization():
             boundaries_array = np.asarray(boundaries)
 
             for i in range(1, iteration + 1):
-                print("Iteration: ", i)
+                logger.debug("Iteration: ", i)
                 # Generate dimensional Grid to search
                 if sampling == "LHS":
                     lhs_generator = LHS(xlimits=boundaries_array)
@@ -529,9 +530,9 @@ class BayesianOptimization():
                 gp.fit()
                 if optimization:
                     gp.optimize(n_restarts=n_restart)
-                    print("Optimization: ", i, " completed")
+                    logger.info("Optimization: ", i, " completed")
                 mean, var = gp.predict(search_grid)
-                print("Surrogate Model generated: ", i)
+                logger.info("Surrogate Model generated: ", i)
 
                 # Compute the EI and the new theoretical best
                 predicted_best_X, improvements, best_value = self.optimization_max(search_grid,

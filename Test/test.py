@@ -23,10 +23,6 @@ def test_GP_1D(optimize=True):
 
     y = noise(x, alpha=0.7)
 
-    """x = np.random.uniform(-5, 5, (300,1))
-    y = np.array([0.4 * (a*a)*np.sin(a-4) + (.8 * np.random.randn()) for a in x])"""
-
-
 
     #gp = GP(x*10000, y*1000, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-3, gradient=False), normalize_y=True)
     gp = GP(x, y, kernel=RBF(), normalize_y=True)
@@ -49,7 +45,7 @@ def test_GP_1D(optimize=True):
         #gp.opt(n_restarts=30)
         gp.set_boundary([[1e-6,0.5]])
 
-        gp.optimize(n_restarts=10, optimizer="L-BFGS-B", verbose=True)
+        gp.optimize(n_restarts=10, optimizer="L-BFGS-B", verbose=False)
 
         #optimized.fit()
         #pred, var = gp.predict(plot[:, None])
@@ -302,7 +298,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_GP_1D()
+test_minimization_1D()
 print("Finished: ", time.time() - a)
 
 

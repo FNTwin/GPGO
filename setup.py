@@ -5,7 +5,7 @@ with open("README.md", "r") as file:
 
 setup(
     name='GPGO',
-    version='0.1',
+    version='0.1.0',
     author='Cristian Gabellini',
     packages=find_packages(),
     url='https://github.com/FNTwin/GPGO',
@@ -20,6 +20,7 @@ setup(
         'scipy',
         'matplotlib',
     ],
+
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
