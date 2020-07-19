@@ -158,9 +158,9 @@ def test_minimization_1D():
 
 
     def f(X):
-        #return -(1.4 - 3 * X) * np.sin(18 * X)
+        return -(1.4 - 3 * X) * np.sin(18 * X)
         #return np.sin(X)
-        return (6* X - 2)**2 * np.sin (12 * X - 4)
+        #return (6* X - 2)**2 * np.sin (12 * X - 4)
         #return 4 * 100 * ((.9 / X) ** 12 - (.9 / X) ** 6)
 
     def noise(X):
@@ -168,7 +168,7 @@ def test_minimization_1D():
 
     Z = f(X)
 
-    gp = GP(X, Z, RBF(gradient=True), normalize_y=True)
+    gp = GP(X, Z, RBF(gradient=False), normalize_y=True)
     gp.set_boundary([[1e-4,0.5]])
     settings={"type":"NAIVE",
               "ac_type":"UCB",
@@ -176,7 +176,7 @@ def test_minimization_1D():
               "boundaries": [[0,1.2]],
               "epsilon": 0.01,
               "iteration": 10,
-              "minimization": True,
+              "minimization":False,
               "optimization":True,
               "n_restart": 10,
               "sampling":np.linspace}

@@ -112,8 +112,9 @@ class Observer():
     --------
     """
 
-    def __init__(self, type_opt):
+    def __init__(self, type_opt, minimization):
         self.type=type_opt
+        self.minimization=minimization
         self.best={}
         self.iterator=iter(self)
         self.all=[]
@@ -188,10 +189,16 @@ class Observer():
         """
 
         def security_check(best, value):
-            if np.squeeze(best[0])<=np.squeeze(value):
-                return False
+            if self.minimization:
+                if np.squeeze(best[0])<=np.squeeze(value):
+                    return False
+                else:
+                    return True
             else:
-                return True
+                if np.squeeze(best[0])>=np.squeeze(value):
+                    return False
+                else:
+                    return True
 
         self.all.append(proposition)
 

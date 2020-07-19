@@ -116,7 +116,7 @@ class BayesianOptimization():
         self._err = err
         self._it = None
         self._time_logger = time_log()
-        self._helper = Observer(self.get_info("type"))
+        self._helper = Observer(self.get_info("type"),self.get_info("minimization"))
         self._old_dataset = [X, Y]
 
     def run(self):
