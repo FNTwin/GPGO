@@ -130,7 +130,6 @@ class RBF(Kernel):
         self.hyper["noise"] = noise
 
     '#Get methods'
-
     def getsubtype(self):
         return self.subtype
 

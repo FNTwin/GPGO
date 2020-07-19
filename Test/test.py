@@ -154,13 +154,13 @@ def test_minimization_2D():
 def test_minimization_1D():
 
 
-    X = np.random.uniform(-3,1,3)[:,None]
+    X = np.random.uniform(0,1,3)[:,None]
 
 
     def f(X):
         #return -(1.4 - 3 * X) * np.sin(18 * X)
-        return np.sin(X)
-        #return (6* X - 2)**2 * np.sin (12 * X - 4)
+        #return np.sin(X)
+        return (6* X - 2)**2 * np.sin (12 * X - 4)
         #return 4 * 100 * ((.9 / X) ** 12 - (.9 / X) ** 6)
 
     def noise(X):
@@ -168,15 +168,15 @@ def test_minimization_1D():
 
     Z = f(X)
 
-    gp = GP(X, Z, RBF(gradient=False), normalize_y=True)
+    gp = GP(X, Z, RBF(gradient=True), normalize_y=True)
     gp.set_boundary([[1e-4,0.5]])
-    settings={"type":"BFGS",
+    settings={"type":"NAIVE",
               "ac_type":"UCB",
               "n_search": 1000,
-              "boundaries": [[-3,3]],
+              "boundaries": [[0,1.2]],
               "epsilon": 0.01,
-              "iteration": 5,
-              "minimization": False,
+              "iteration": 10,
+              "minimization": True,
               "optimization":True,
               "n_restart": 10,
               "sampling":np.linspace}
@@ -305,7 +305,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_minimization_2D()
+test_minimization_1D()
 print("Finished: ", time.time() - a)
 
 

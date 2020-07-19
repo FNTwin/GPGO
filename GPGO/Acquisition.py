@@ -62,5 +62,5 @@ class Upper_Confidence_Bound():
         point = np.atleast_2d(point)
         mean, variance = self.gp.predict(point)
         UCB = (mean - self.epsilon * variance)
-        UCB[UCB < 0] = 0
-        return UCB
+        UCB[UCB > 0] = 0
+        return -UCB
