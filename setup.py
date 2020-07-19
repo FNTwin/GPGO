@@ -4,7 +4,7 @@ with open("README.md", "r") as file:
     read_me_description = file.read()
 
 setup(
-    name='BayesianOptimization',
+    name='GPGO',
     version='0.1',
     author='Cristian Gabellini',
     packages=find_packages(),

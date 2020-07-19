@@ -22,7 +22,7 @@ def min_2D():
     Z = f(X)[:, None]
     """gp = GP(X, Z, noise=0.01)
     gp.fit()
-    BayOpt = BayesianOptimization(X, Z, gp, f, err=1e-2)
+    BayOpt = GPGO(X, Z, gp, f, err=1e-2)
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
     err = BayOpt.bayesian_run_min(100,
                                    boundaries,
@@ -89,7 +89,7 @@ def min_6D():
                           epsilon=0.01,
                           func=np.random.uniform)"""
     #print("BEST", err)
-    #BayesianOptimization.test_long(x=x, y=y, f=f, n_search_points=6, boundaries=[[0, 1] for i in range(6)]
+    #GPGO.test_long(x=x, y=y, f=f, n_search_points=6, boundaries=[[0, 1] for i in range(6)]
                                  #  , iter=100, minima=-3.32237, opt=False)
 
 def one_run_test():
@@ -128,7 +128,7 @@ def test_minimization_1D():
                                    , iter=10, minima=-3.32237, opt=False)
     """gp = GP(X, Z, noise=0.0005)
     gp.fit()
-    BayOpt = BayesianOptimization(X, Z, gp, f)
+    BayOpt = GPGO(X, Z, gp, f)
     #gp.optimize(constrains=[[2,100],[2,100]],n_points=150)
 
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)

@@ -95,7 +95,7 @@ class BayesianOptimization():
                   "n_restart":10,
                   "sampling":np.linspace
                   "plot": True}
-        BayOpt=BayesianOptimization(X,Y,settings,GaussProcess,f)
+        BayOpt=GPGO(X,Y,settings,GaussProcess,f)
         BayOpt.run()
     """
 
@@ -144,7 +144,7 @@ class BayesianOptimization():
         Method to suggest the new sample points without calling the evaluation routine
         :return: np.array
             Proposal for the new set of points to sample the function
-        It create a shallow copy of the BayesianOptimization object with a _no_evaluation flag that will be eliminated
+        It create a shallow copy of the GPGO object with a _no_evaluation flag that will be eliminated
         at the end of the run
         """
         # self._no_evaluation=True

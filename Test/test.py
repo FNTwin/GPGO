@@ -1,9 +1,9 @@
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-from BayesianOptimization import GP
-from BayesianOptimization import RBF
-from BayesianOptimization import BayesianOptimization
+from GPGO import GP
+from GPGO import RBF
+from GPGO import BayesianOptimization
 
 def test_GP_1D(optimize=True):
     #x =  np.arange(-3, 5, 1)[:, None]

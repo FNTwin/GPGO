@@ -1,7 +1,7 @@
 import numpy as np
-from BayesianOptimization import GP
-from BayesianOptimization import RBF
-from BayesianOptimization import BayesianOptimization
+from GPGO import GP
+from GPGO import RBF
+from GPGO import BayesianOptimization
 
 x=np.random.uniform(0,10,3)[:,None]
 y=x*3
