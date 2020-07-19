@@ -4,11 +4,13 @@ import numpy as np
 from GPGO import GP
 from GPGO import RBF
 from GPGO import BayesianOptimization
+from GPGO.GaussianProcess import log_gp
+from GPGO.GaussianProcess import generate_grid
 
 def test_GP_1D(optimize=True):
     #x =  np.arange(-3, 5, 1)[:, None]
     #x=np.array([0.1,0.12,0.143,0.3,0.5,0.75,0.67,0.9,0.92,1.1])[:,None]
-    x=np.random.uniform(0,1,200)[:,None]
+    x=np.random.uniform(0,1,12)[:,None]
 
     def f(X):
         #return -(1.4-3*X)*np.sin(18*X)
@@ -21,11 +23,11 @@ def test_GP_1D(optimize=True):
     def noise(x, alpha=1):
         return f(x) + np.random.randn(*x.shape) * alpha
 
-    y = noise(x, alpha=0.7)
+    y = noise(x, alpha=0)
 
 
     #gp = GP(x*10000, y*1000, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-3, gradient=False), normalize_y=True)
-    gp = GP(x, y, kernel=RBF(), normalize_y=True)
+    gp = GP(x*35, y*1000, kernel=RBF(gradient=False), normalize_y=False)
     gp.fit()
 
     plot = np.linspace(0,1, 1000)
@@ -42,19 +44,20 @@ def test_GP_1D(optimize=True):
                                           function=np.linspace)"""
 
 
-        #gp.opt(n_restarts=30)
-        gp.set_boundary([[1e-6,0.5]])
-
         gp.optimize(n_restarts=10, optimizer="L-BFGS-B", verbose=False)
+        #gp.optimize_grid(n_points=50)
+
 
         #optimized.fit()
         #pred, var = gp.predict(plot[:, None])
 
         #plt.plot(plot[:,None],f(plot))
-        gp.plot(plot[:, None])
+        gp.plot(plot[:, None]*35)
         #plt.scatter(x,y,marker="x",color="red")
         gp.log_marginal_likelihood()
-        print(gp)
+        log_gp(gp)
+
+        #print(gp)
 
 
 def test_GP_2D(optimize=True, function=np.linspace):
@@ -149,7 +152,7 @@ def test_minimization_2D():
 def test_minimization_1D():
 
 
-    X = np.random.uniform(0,1.2,10)[:,None]
+    X = np.random.uniform(0,1.2,3)[:,None]
 
 
     def f(X):
@@ -164,20 +167,18 @@ def test_minimization_1D():
 
     gp = GP(X, Z, RBF(gradient=False), normalize_y=True)
     gp.set_boundary([[1e-4,0.5]])
-    settings={"type":"NAIVE",
-              "n_search": 1000,
+    settings={"type":"BFGS",
+              "n_search": 4,
               "boundaries": [[0,1.2]],
               "epsilon": 0.01,
-              "iteration": 50,
+              "iteration": 10,
               "minimization":True,
               "optimization":True,
               "n_restart": 10,
-              "sampling":np.linspace,
-              "plot": True}
+              "sampling":np.linspace}
 
     BayOpt = BayesianOptimization(X, Z, settings, gp, noise)
-    best=BayOpt.suggest_location()
-    #best=BayOpt.run()
+    best=BayOpt.run()
     # best=BayOpt.bayesian_run(100,  [[-1,4] for i in range(dim_test)] , iteration=30, optimization=False)
     """best = BayOpt.bayesian_run_min(250,
                                    [[0,1]],
@@ -188,7 +189,8 @@ def test_minimization_1D():
                                    epsilon=0.01,
                                    sampling=np.linspace)"""
 
-    print("bay:", best)
+    #print("bay:", best)
+    print(BayOpt)
 
 
 def test_Hartmann_6D():

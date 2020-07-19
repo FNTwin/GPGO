@@ -2,16 +2,27 @@ import numpy as np
 import os
 import time as tm
 import matplotlib.pyplot as plt
+import logging
 
-def log_gp(X_train, Y_train, lin, mean, var, gp, path=None):
-    name = "GP_log.txt"
-    if path is not None:
-        name = os.path.join(path, name)
+logger = logging.getLogger(__name__)
 
-    else:
-        with open(name, "w") as f:
-            f.write(f'#===============LOG of Gaussian Process==============\n\n')
-            f.write(str(gp))
+def log_gp(gp, path=None, log_name="GP_log.txt"):
+    """
+    Small logger to save a fitted GP model to file
+    gp : GP object
+    path : str (default current working directory)
+        Path where to save the file
+    log_name: str (default "GP_log.txt")
+        Filename for the log
+    """
+    if path is None:
+        path=os.path.abspath(os.getcwd())
+        logger.info(path)
+
+    path = os.path.join(path, log_name)
+    with open(path, "w") as f:
+        f.write(f'#===============LOG of Gaussian Process==============\n\n')
+        f.write(str(gp))
 
 
 def log_bo(bayOpt, path):
@@ -57,6 +68,7 @@ class time_log():
 
     def time(self, t=tm.time()):
         self.intervall.append(t - self.intervall[self.count])
+        logger.debug(t)
         self.count += 1
 
     def time_end(self):
@@ -68,15 +80,37 @@ class time_log():
         self.end = fin
 
     def total(self):
+        """
+        Calculate the total time
+        :return: str
+        """
         if self.end is None:
             self.time_end()
-        return str(self.end - self.start)
+        return str(self.end - self.start) + " seconds"
 
     def __str__(self):
         start = f'Time: {str(self.end - self.start)} seconds\n'
         return start
 
 class Observer():
+    """
+    Obeserver class to get values from the optimization routines
+
+    ...
+    Attributes
+    -----------
+    type_opt : str (set by default from settings)
+        Type of bayesian optimization for logging purpose
+    best : dict,
+        Dictionary to contain the best value of the optimization and the number of times that value was observed
+    iterator : iter,
+        Iterator of self
+    all: list
+        List of all values observed
+
+    Methods
+    --------
+    """
 
     def __init__(self, type_opt):
         self.type=type_opt
@@ -94,6 +128,10 @@ class Observer():
         return it
 
     def compute_distance(self):
+        """
+        Compute distance between the two last observations
+        :return: list
+        """
         x=self.all
         tmp=[]
         for i in range(len(x)-1):
@@ -102,6 +140,9 @@ class Observer():
 
 
     def compute_convergence(self):
+        """
+        compute the convergence rate of the observations
+        """
         values, rep, conv = [], [], []
         dic=self.best
         for i in dic:
@@ -113,7 +154,7 @@ class Observer():
     def convergence_plot(self, conv):
         n = len(conv)
 
-        plt.figure()
+        plot=plt.figure()
         ax=plt.subplot(1,2,1)
         ax.set_title("Convergence Plot")
         ax.plot(np.arange(1, n + 1, 1), conv, color="red", linestyle="--")
@@ -129,13 +170,22 @@ class Observer():
         ax1.set(xlabel="Iteration", ylabel="d([x_n]-x[n-1])")
         ax1.legend()
 
-        plt.show()
 
     def plot(self):
+        """
+        Create the convergence plot of the optimization
+        """
         _,_,conv=self.compute_convergence()
         self.convergence_plot(conv)
 
     def observe(self, value, proposition):
+        """
+        Observe an iteration of the optimization
+        :param value: array,
+            Y value of the optimization
+        :param proposition: array,
+            X value of the optimization
+        """
 
         def security_check(best, value):
             if np.squeeze(best[0])<=np.squeeze(value):
@@ -145,8 +195,8 @@ class Observer():
 
         self.all.append(proposition)
 
-        #self.all.append(value) devo passare le x non le y
         if hasattr(self, "flag"):
+            logging.debug(self.best)
             index=str(len(self.best)-1)
             best=self.best[index]
 
@@ -162,7 +212,10 @@ class Observer():
         if hasattr(self, "iterations"):
             self.iterations-=1
         else:
-            print("No Observation pending")
+            logger.warning("No Observation pending")
+
+    def __str__(self):
+        return self.type
 
 
 

@@ -112,7 +112,7 @@ class BayesianOptimization():
         self._err = err
         self._it = None
         self._time_logger = time_log()
-        self._helper = Observer("Bayesian Optimization")
+        self._helper = Observer(self.get_info("type"))
         self._old_dataset = [X, Y]
         #Fare verbose
 
@@ -321,8 +321,7 @@ class BayesianOptimization():
                     logger.info("Optimization: ", i, " completed")
 
                 # Compute the EI and the new theoretical best
-                """predicted_best_X = self.propose_new_sample_loc(self.Expected_improment, gp,
-                                                               boundaries_array, search_grid, epsilon)"""
+
                 predicted_best_X = self.propose_new_sample_loc(self.Expected_improment, gp,
                                                                boundaries_array, n_search, epsilon)
 
@@ -352,7 +351,7 @@ class BayesianOptimization():
             return self.get_X()[best_index], self.get_Y()[best_index]
 
     def Expected_improment(self, new_points, max, gp, epsilon):
-        print(new_points)
+        logger.debug(new_points)
         def Z(point, mean, variance, epsilon):
             return (-mean + point + epsilon) / variance
 
@@ -369,9 +368,6 @@ class BayesianOptimization():
         min_val = None
 
         max = np.min(self.get_Y())
-
-        """def min_objective(X, max, gp, epsilon):
-            return -EI_func(X.reshape(-1, dim), max, gp, epsilon)"""
 
         #improvement = EI_func(n_search_points, max, gp, epsilon)
         min_x = None
@@ -464,7 +460,7 @@ class BayesianOptimization():
                 best_index = np.argmin(self.get_Y())
                 tm.time_end()
                 # log_bo(self.__str__())
-                print("TIME:",tm)
+                logger.info("TIME:",tm)
                 self.observer_plot()
 
                 return self.get_X()[best_index], self.get_Y()[best_index]
@@ -750,7 +746,8 @@ class BayesianOptimization():
         header = "============================================================================\n"
         old_data = f'Bayesian Run initialized with: {self._it} iterations\nDATASET\n{self._old_dataset}\n'
         old_data += "----------------------------------------------------------------------------\n\n"
-        time = f'Time: {str(self.get_time_logger().total())}\n\n'
+        time = f'Time: {self.get_time_logger().total()}\n'
+        time+="Acquisition function optimizer: "+str(self._helper)+"\n\n"
         count = 0
         datanew = f'Iteration data\n\n'
         X, Y = self.get_X(), self.get_Y()
@@ -954,6 +951,13 @@ class BayesianOptimization():
 
     def observer_plot(self):
         self._helper.plot()
+
+    def plot_convergence(self):
+        #TODO
+        try:
+            self._helper.plot_conv()
+        except:
+            logger.warning("No Optimization task done")
 
 
 def Expected_Improvement_max(new_point, mean, variance, epsilon):

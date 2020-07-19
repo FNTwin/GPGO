@@ -134,8 +134,8 @@ class GP():
         compute the normal inversion of the Graham matrix. If the set of hyperparameters causes the calculations to fail
         for a np.linalg.error, it sets the marginal likelihood to infinity to discard the set of parameters.
         """
-        if verbose:
-            logger.warning(hyper)
+
+        logger.debug(hyper)
 
         if self.normalize_y:
             self._mean_y = np.mean(self.get_Y(), axis=0)
@@ -152,14 +152,15 @@ class GP():
 
         except np.linalg.LinAlgError as exc:
             try:
-                print(exc, "\nComputing as a normal inverse\n")
+                logger.info(exc, "\nComputing as a normal inverse\n")
                 K = np.linalg.inv(kernel)
                 marg = - .5 * Y.T.dot(K.dot(Y)) \
                        - .5 * np.log(np.diag(K)).sum() \
                        - .5 * K.shape[0] * np.log(2 * np.pi)
 
             except np.linalg.LinAlgError as exc2:
-                logger.warning(exc2)
+                if verbose:
+                    logger.warning(exc2)
                 marg = np.inf
 
         if self.get_kernel().get_eval():
@@ -184,9 +185,7 @@ class GP():
         :return: The value of the gradients of negative log marginal likelihood.
         """
 
-        logger.info("GRADIENT", hyper)
-        #logger.debug("GRADIENT", hyper)
-
+        logger.debug("GRADIENT", hyper)
         hyper = np.squeeze(hyper)
         m_g = lambda h:  -(.5 * Y.T.dot(K.dot(h.dot(K.dot(Y)))) - .5 * np.diag(K.dot(h)).sum())
 
@@ -237,8 +236,8 @@ class GP():
 
         for i in hyper_grid:
             tmp_marg = self.compute_log_marginal_likelihood(X, Y, pair_matrix, i, verbose)
-            if check_best(best, tmp_marg):
-                set_dict(tmp_marg, i)
+            if check_best(best, -tmp_marg):
+                set_dict(-tmp_marg, i)
 
         return best
 
@@ -260,7 +259,8 @@ class GP():
         args = (constrains, n_points, function, verbose)
         new = self.grid_search_optimization(*args)
         self.set_marg(new["marg"])
-        self.set_hyper(new["hyper"][0], new["hyper"][1], new["hyper"][2])
+        #fare un buon metodo set hyper
+        self.set_hyper(*new["hyper"])
         self.fit()
 
     def optimize(self,  n_restarts=10, optimizer="L-BFGS-B", verbose=False):
@@ -288,8 +288,7 @@ class GP():
         boundaries=self.get_boundary()
         eval_grad = self.get_kernel().get_eval()
 
-        if verbose:
-            logger.info("Starting Log Marginal Likelihood Value: ", old_marg)
+        logger.debug("Starting Log Marginal Likelihood Value: ", old_marg)
 
         X_d, Y_d = self.get_X(), self.get_Y()
         pair_matrix = np.sum(X_d ** 2, axis=1)[:, None] + np.sum(X_d ** 2, axis=1) - 2 * np.dot(X_d, X_d.T)
@@ -301,8 +300,8 @@ class GP():
         #Optimization Loop
         for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1], size=(n_restarts, hyper_dim)):
             it += 1
-            if verbose:
-                logger.info("RESTART :", it, i)
+
+            logger.debug("RESTART :", it, i)
 
             res = minimize(lambda h: self.compute_log_marginal_likelihood(X=X_d,
                                                                           Y=Y_d,
@@ -324,11 +323,12 @@ class GP():
 
         #If the optimization doesn't converge set the value to old parameters
         if new_marg is None:
+            if verbose:
+                logger.warning("Using Old Log Marg Likelihood")
             new_marg=old_marg
             new_hyper=old_hyper
 
-        if verbose:
-            logger.info("New Log Marginal Likelihood Value: ", -new_marg, new_hyper)
+        logger.info("New Log Marginal Likelihood Value: ", -new_marg, new_hyper)
         # Update and fit the new gp model
         self.set_hyper(*new_hyper)
         self.set_marg(-new_marg)
@@ -531,6 +531,7 @@ class GP():
 
 
     def set_hyper(self, sigma=None, l=None, noise=None):
+
         self.get_kernel().sethyper(sigma, l, noise)
 
     def get_noise(self):
