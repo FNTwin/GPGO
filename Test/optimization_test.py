@@ -2,9 +2,10 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from GaussianProcess.GP import GP, generate_grid
-from GaussianProcess.Kernel.RBF import RBF
-from Opt import BayesianOptimization
+from .GaussianProcess.GP import GP, generate_grid
+from .GaussianProcess.Kernel.RBF import RBF
+from .Opt import BayesianOptimization
+
 
 def min_2D():
     dim_test = 2

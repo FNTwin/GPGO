@@ -1,7 +1,7 @@
 import copy
 import matplotlib.pyplot as plt
 import numpy as np
-from GaussianProcess import GP, generate_grid, time_log, plot_BayOpt, Observer
+from .GaussianProcess import GP, generate_grid, time_log, plot_BayOpt, Observer
 from scipy.optimize import minimize
 from scipy.stats import norm
 

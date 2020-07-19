@@ -4,11 +4,12 @@ with open("README.md", "r") as file:
     read_me_description = file.read()
 
 setup(
-    name='GOGP',
+    name='BayesianOptimization',
     version='0.1',
     author='Cristian Gabellini',
     packages=find_packages(),
     url='https://github.com/FNTwin/Bayesian-Optimization',
+    download_url = ,
     license='MIT',
     description='Bayesian Optimization with Gaussian Process as surrogate model',
     long_description=read_me_description,
@@ -18,5 +19,12 @@ setup(
         'numpy',
         'scipy',
         'matplotlib',
+    ],
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'Topic :: Software Development :: Build Tools',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.6',
     ]
 )

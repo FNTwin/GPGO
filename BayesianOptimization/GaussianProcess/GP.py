@@ -109,8 +109,7 @@ class GP():
                    - .5 * np.log(np.diag(K)).sum() \
                    - .5 * K.shape[0] * np.log(2 * np.pi)
 
-        #self.set_marg(marg)
-        return self.marg
+        self.set_marg(marg)
 
     def compute_log_marginal_likelihood(self, X, Y, pair_matrix, hyper, verbose=False):
         """

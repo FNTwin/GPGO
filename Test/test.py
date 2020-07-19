@@ -1,10 +1,9 @@
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-from GaussianProcess.GP import GP, generate_grid
-from GaussianProcess.Kernel.RBF import RBF
-from GaussianProcess.Kernel.Matern import Matern
-from Opt import BayesianOptimization
+from BayesianOptimization import GP
+from BayesianOptimization import RBF
+from BayesianOptimization import BayesianOptimization
 
 def test_GP_1D(optimize=True):
     #x =  np.arange(-3, 5, 1)[:, None]
@@ -303,7 +302,7 @@ def test_GP_print():
 
 
 a = time.time()
-test_minimization_1D()
+test_GP_1D()
 print("Finished: ", time.time() - a)
 
 
