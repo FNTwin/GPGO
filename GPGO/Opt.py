@@ -5,9 +5,6 @@ from .GaussianProcess import GP, generate_grid, time_log, plot_BayOpt, Observer
 from scipy.optimize import minimize
 from .Acquisition import Acquistion
 
-from DIRECT import solve
-from smt.sampling_methods import LHS
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -137,6 +134,11 @@ class BayesianOptimization():
 
                 self._optimizer = bay_opt_methods[self.get_info("type")]
                 self._helper.type = self.get_info("type")
+                if self._helper.type=="DIRECT":
+                    try:
+                        from DIRECT import solve
+                    except ImportError as exc:
+                        raise ImportError("To use the DIRECT optimization install the Python DIRECT wrapper\n",exc)
                 del copied_settings["type"]
                 return self.bayesian_run(**copied_settings)
             else:
@@ -165,8 +167,12 @@ class BayesianOptimization():
     def naive(self, n_search, boundaries, sampling, grid_bounds):
         dim = self.get_dim_inputspace()
         if sampling == "LHS":
-            lhs_generator = LHS(xlimits=boundaries)
-            search_grid = lhs_generator(n_search)
+            try:
+                from smt.sampling_methods import LHS
+                lhs_generator = LHS(xlimits=boundaries)
+                search_grid = lhs_generator(n_search)
+            except ImportError as exc:
+                raise ImportError("To use the Latin Hypercube Sampling install the smt python package\n",exc)
         else:
             search_grid = generate_grid(dim, n_search, grid_bounds, sampling)
 

@@ -3,6 +3,12 @@ from setuptools import setup,find_packages
 with open("README.md", "r") as file:
     read_me_description = file.read()
 
+extras = {
+   'DIRECT': ['DIRECT'],
+    'smt' : ['smt'],
+    'all' : ['DIRECT','smt']
+}
+
 setup(
     name='GPGO',
     version='0.1.2',
@@ -19,8 +25,9 @@ setup(
         'numpy',
         'scipy',
         'matplotlib',
+        'scikit-learn'
     ],
-
+    extras_require=extras,
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
