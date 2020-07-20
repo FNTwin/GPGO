@@ -25,9 +25,29 @@ def plot_GP_1D(X_train, Y_train, lin, mean, var):
 
 
 def plot_GP_2D(X_train, Y_train, grid, mean, var):
-    ax = plt.axes(projection='3d')
+    n=int(np.sqrt(grid.shape[0]))
 
-    ax.scatter(X_train[:, 0], X_train[:, 1], Y_train,
+    fig, ax = plt.subplots(nrows=1, ncols=2)
+    cp=ax[0].contourf(grid[:, 0].reshape(n,n), grid[:, 1].reshape(n,n), mean.reshape(n,n), 15,cmap="plasma")
+    ax[0].scatter(X_train[:,0],X_train[:,1],color="red",marker="x")
+
+    cp1=ax[1].contourf(grid[:, 0].reshape(n, n), grid[:, 1].reshape(n, n), (2*var).reshape(n, n),15,cmap="Blues")
+    ax[1].scatter(X_train[:, 0], X_train[:, 1], color="red", marker="x")
+
+    fig.colorbar(cp,ax=ax[0])
+    fig.colorbar(cp1,ax=ax[1])
+    ax[0].set_title("Mean Plot", pad=23)
+    ax[0].set_xlabel("X1")
+    ax[0].set_ylabel("X2")
+
+    ax[1].set_title("Variance plot", pad=23)
+    ax[1].set_xlabel("X1")
+    ax[1].set_ylabel("X2")
+
+
+    plt.show()
+
+    """ax.scatter(X_train[:, 0], X_train[:, 1], Y_train,
                marker=".", s=1, color="red", label="Train")
 
     ax.scatter(grid[:, 0], grid[:, 1], mean,
@@ -37,7 +57,7 @@ def plot_GP_2D(X_train, Y_train, grid, mean, var):
                s=0.5, alpha=0.3, color="Navy", label="Confidence")
 
     ax.scatter(grid[:, 0], grid[:, 1], mean - 2 * var,
-               s=0.5, alpha=0.3, color="Navy")
+               s=0.5, alpha=0.3, color="Navy")"""
     return plt
 
 
@@ -77,7 +97,32 @@ def plot_improvement(X_train, Y_train, grid, mean, var, improvement, x_improveme
     ax[1].legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower center", borderaxespad=0, ncol=2)
 
     plt.tight_layout()
-    return fig,plt,ax
+    plt.show()
+
+
+def plot_improvement_2D(X_train, Y_train, grid, mean, var, improvement, x_improvement):
+    n=int(np.sqrt(grid.shape[0]))
+
+    fig, ax = plt.subplots(nrows=1, ncols=2)
+    cp=ax[0].contourf(grid[:, 0].reshape(n,n), grid[:, 1].reshape(n,n), mean.reshape(n,n), 15,cmap="plasma")
+    ax[0].scatter(X_train[:,0],X_train[:,1],color="red",marker="x")
+    ax[0].axhline(x_improvement[1], color="red")
+    ax[0].axvline(x_improvement[0], color="red")
+
+    cp1=ax[1].contourf(grid[:,0].reshape(n, n), grid[:, 1].reshape(n, n), improvement.reshape(n, n),15,cmap="OrRd")
+
+    fig.colorbar(cp,ax=ax[0])
+    fig.colorbar(cp1,ax=ax[1])
+    ax[0].set_title("Mean Plot", pad=23)
+    ax[0].set_xlabel("X1")
+    ax[0].set_ylabel("X2")
+
+    ax[1].set_title("Variance plot", pad=23)
+    ax[1].set_xlabel("X1")
+    ax[1].set_ylabel("X2")
+    plt.show()
+
+
 
 
 def plot_BayOpt(X_train, Y_train, grid, mean, var, improvement=None, x_improve=None):
@@ -99,6 +144,6 @@ def plot_BayOpt(X_train, Y_train, grid, mean, var, improvement=None, x_improve=N
         if dim == 1:
             return plot_improvement(*args)
         elif dim == 2:
-            raise ValueError("TODO")
+            return plot_improvement_2D(*args)
         else:
             raise ValueError("Cannot plot more than 2 dimension")

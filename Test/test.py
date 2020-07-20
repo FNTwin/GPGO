@@ -65,12 +65,13 @@ def test_GP_2D(optimize=True, function=np.linspace):
     dim_test = 2
     dim_out = 1
     n_train_p = 7
-    X = np.random.uniform(-3, 3, (40, 2))
-    #Z = ((X[:, 1] ** 2 * X[:, 0] ** 2) * np.sin((X[:, 1] ** 2 + X[:, 0] ** 2)))[:, None]
-    Z=np.sin((X[:, 1] ** 2 + X[:, 0] ** 2))[:,None]
+    X = np.random.uniform(-1,1, (14, 2))
+    Z = ((X[:, 1] ** 2 * X[:, 0] ** 2) * np.sin((X[:, 1] ** 2 + X[:, 0] ** 2)))[:, None]
+    #Z=np.sin((X[:, 1] ** 2 + X[:, 0] ** 2))[:,None]
     gp = GP(X, Z, kernel=RBF())
     gp.fit()
-    plot = generate_grid(dim_test, 50, [[-3, 3] for i in range(dim_test)])
+    plot = generate_grid(dim_test, 100, [[-1, 1] for i in range(dim_test)])
+    print(plot.shape)
 
     #pred = gp.predict(plot)
     #gp.plot(plot)
@@ -114,7 +115,7 @@ def test_minimization_2D():
     dim_test = 2
     dim_out = 1
     n_train_p = 3
-    X = np.array([[-0.9, 0.3],[0.5,.5]])
+    X = np.array([[-4.1,9.3],[-2,12.5]])
     boundaries = [[-5, 10], [0, 15]]
 
     def f(x):
@@ -126,17 +127,18 @@ def test_minimization_2D():
     gp = GP( X, Z, RBF(gradient=False))
     gp.fit()
     settings = {"type": "BFGS",
-                "ac_type": "UCB",
-                "n_search": 10,
+                "ac_type": "EI",
+                "n_search": 3,
                 "boundaries": boundaries,
                 "epsilon": 0.01,
-                "iteration": 40,
+                "iteration": 50,
                 "minimization": True,
                 "optimization": True,
-                "n_restart": 10,
+                "n_restart": 5,
                 "sampling": np.linspace}
 
     BayOpt = BayesianOptimization(X,Z, settings, gp, f)
+
     best=BayOpt.run()
 
     print("bay:", best)
@@ -234,14 +236,15 @@ def test_Hartmann_6D():
     gp = GP(x, y, RBF(gradient=False))
     gp.fit()
 
-    settings = {"type": "BFGS",
-                "n_search": 10,
+    settings = {"type": "DIRECT",
+                "ac_type":"EI",
+                "n_search": 1,
                 "boundaries": [[0, 1] for i in range(6)],
-                "epsilon": 0.1,
-                "iteration": 10,
+                "epsilon": 0.01,
+                "iteration": 50,
                 "minimization": True,
                 "optimization": True,
-                "n_restart": 10,
+                "n_restart": 5,
                 "sampling": np.random.uniform}
 
     BayOpt = BayesianOptimization(x, y, settings, gp, hartmann_6D)
@@ -303,9 +306,21 @@ def test_GP_print():
     print(gp)
     gp.save_model("/home/merk/Desktop/GP.txt")"""
 
-
+def plot_test():
+    import matplotlib.pyplot as plt
+    def f(x):
+        x,y=x[:,0],x[:,1]
+        return np.sin(x**2+y**2)
+    bounds=[[0,3],[0,3]]
+    grid=generate_grid(2,50,bounds)
+    y=f(grid)
+    test_1,test_2=np.meshgrid(np.linspace(0,3,50),np.linspace(0,3,50))
+    print(test_1.shape,test_2.shape)
+    print(grid[:,0].reshape(50,50))
+    cp=plt.contourf(grid[:,0].reshape(50,50),grid[:,1].reshape(50,50),f(grid).reshape(50,50))
+    plt.show()
 a = time.time()
-test_minimization_1D()
+test_Hartmann_6D()
 print("Finished: ", time.time() - a)
 
 

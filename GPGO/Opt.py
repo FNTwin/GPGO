@@ -134,11 +134,7 @@ class BayesianOptimization():
 
                 self._optimizer = bay_opt_methods[self.get_info("type")]
                 self._helper.type = self.get_info("type")
-                if self._helper.type=="DIRECT":
-                    try:
-                        from DIRECT import solve
-                    except ImportError as exc:
-                        raise ImportError("To use the DIRECT optimization install the Python DIRECT wrapper\n",exc)
+
                 del copied_settings["type"]
                 return self.bayesian_run(**copied_settings)
             else:
@@ -183,12 +179,13 @@ class BayesianOptimization():
 
         improvement = self._acquistion.call(search_grid, best=best)
         new_prediction = search_grid[np.argmax(improvement)]
+        print(new_prediction)
 
         if hasattr(self, "_plot"):
             mean, variance = self.get_GP().predict(search_grid)
             args = [self.get_X(), self.get_Y(), search_grid, mean, variance, improvement, new_prediction]
-            fig, plt, ax = plot_BayOpt(*args)
-            plt.show()
+            plot_BayOpt(*args)
+
         return np.atleast_2d(new_prediction)
 
     def bfgs(self, boundaries, n_search):
@@ -216,7 +213,11 @@ class BayesianOptimization():
 
         return np.atleast_2d(min_x)
 
-    def direct(self, boundaries, max_iter=6000):
+    def direct(self, boundaries, max_iter=3000):
+        try:
+            from DIRECT import solve
+        except ImportError as exc:
+            raise ImportError("To use the DIRECT optimization install the Python DIRECT wrapper\n", exc)
         def wrapper(f):
             def g(x, user_data):
                 return -f(np.array([x]), user_data), 0
@@ -230,15 +231,14 @@ class BayesianOptimization():
         lb = boundaries[:, 0]
         ub = boundaries[:, 1]
         # maxf= 80000
+        #max_iter=6000,1000
         x, val, _ = solve(wrapper(self._acquistion.call), lb, ub, maxT=max_iter, user_data=best, algmethod=1)
         logger.info("DIRECT:", x, val)
         return np.atleast_2d(x)
 
     def next_sample_validation(self, new_sample, boundaries):
         if np.any(np.sqrt(np.sum((self.get_X() - new_sample) ** 2, axis=1)) < self.get_err()):
-            logger.debug("+++++++++++++++++++++++++++++++++++++++++++")
-            logger.debug(new_sample)
-            logger.debug(new_sample.shape[0])
+            logger.debug("----------Evaluations too close---------\n", new_sample, new_sample.shape[0])
             return np.random.uniform(boundaries[:, 0], boundaries[:, 1], (1, self.get_dim_inputspace()))
         else:
             return new_sample
