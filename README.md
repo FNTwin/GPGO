@@ -24,6 +24,8 @@ In this little package right now there are 3 ways to run an optimization task wi
 
 -DIRECT : optimize the Acquisition function by using the DIRECT optimizer (require DIRECT python package)
 
+(http://i.imgur.com/1XyXNsb.png)
+
 # TODO
 
 -Tutorials and Examples
