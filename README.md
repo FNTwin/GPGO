@@ -6,9 +6,7 @@ Particle Dynamics force field for a complex system of polymers chains functional
 # Hyperparameters
 The Hyperparameters of the GP are optimized by the common technique of maximizing the Log Marginal Likelihood. In this repository this is achieved by using a search grid (although not in an efficient way) or by using the scipy optimizer module (L-BFGS-B, TNC, SLSCP).
 The analytical gradient is implemented for the Radial Basis Function kernel and it is possible to use the derivate of the Log Marginal Likelihood to optimize the hyperparameters.
-
-![GP_example](/home/merk/Desktop/spiegazione game/Figure_6.png)
-
+![gp](https://ibb.co/D8yvW3x)
 
 # Acquisition function
 As it is there are two different acquisition function implemented right now:
