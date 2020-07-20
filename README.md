@@ -23,8 +23,7 @@ In this little package right now there are 3 ways to run an optimization task wi
 -BFGS : optimize the Acquisition function by using the L-BFGS-B optimizer
 
 -DIRECT : optimize the Acquisition function by using the DIRECT optimizer (require DIRECT python package)
-
-(http://i.imgur.com/1XyXNsb.png)
+<a href="https://ibb.co/GPSM0cm"><img src="https://i.ibb.co/f0wN24J/Figure-7.png" alt="Figure-7" border="0"></a>
 
 # TODO
 
