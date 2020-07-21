@@ -197,7 +197,10 @@ class BayesianOptimization():
             best = np.max(self.get_Y())
         # improvement = EI_func(n_search_points, max, gp, epsilon)
         min_x = None
+        c=0
         for i in np.random.uniform(boundaries[:, 0], boundaries[:, 1], size=(n_search, dim)):
+            c+=1
+            logging.info("RESTART: %s",c)
             res = minimize(lambda X: -self._acquistion.call(np.atleast_2d(X), best=best),
                            x0=i, bounds=boundaries, method='L-BFGS-B')
             if not res.success:

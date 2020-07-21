@@ -32,7 +32,7 @@ class Expected_Improvement():
         Z = lambda h, m, v, e: (m - h - e) / v
         EI = (mean - best - self.epsilon) * norm.cdf(Z(best, mean, variance, self.epsilon)) \
              + variance * norm.pdf(Z(best, mean, variance, self.epsilon))
-        EI[variance == 0] = 0
+        EI[variance == 0.] = 0
         return -EI
 
     def func_min(self, point, best):

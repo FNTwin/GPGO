@@ -11,12 +11,13 @@ import logging
 def test_GP_1D(optimize=True):
     #x =  np.arange(-3, 5, 1)[:, None]
     #x=np.array([0.1,0.12,0.143,0.3,0.5,0.75,0.67,0.9,0.92,1.1])[:,None]
-    x=np.random.uniform(0,1,12)[:,None]
+    x=np.random.uniform(-3,3,16)[:,None]
 
     def f(X):
         #return -(1.4-3*X)*np.sin(18*X)
-        #return np.sin(X)
-        return (6 * X - 2) ** 2 * np.sin(12 * X - 4) - X
+        #return X**0
+        return np.sin(X)
+        #return (6 * X - 2) ** 2 * np.sin(12 * X - 4) - X
         #return X + np.sin(X)*10
 
 
@@ -24,14 +25,16 @@ def test_GP_1D(optimize=True):
     def noise(x, alpha=1):
         return f(x) + np.random.randn(*x.shape) * alpha
 
-    y = noise(x, alpha=0)
+    #y = noise(x, alpha=0)
+    y=f(x)
+    print(y)
 
 
     #gp = GP(x*10000, y*1000, kernel=RBF(sigma_l=0.2, l= 1, noise= 1e-3, gradient=False), normalize_y=True)
-    gp = GP(x*35, y*1000, kernel=RBF(gradient=False), normalize_y=False)
+    gp = GP(x, y, kernel=RBF(gradient=False), normalize_y=False)
     gp.fit()
 
-    plot = np.linspace(0,1, 1000)
+    plot = np.linspace(-20,20, 1000)
 
     #pred_old, var_old = gp.predict(plot[:, None])
 
@@ -53,7 +56,7 @@ def test_GP_1D(optimize=True):
         #pred, var = gp.predict(plot[:, None])
 
         #plt.plot(plot[:,None],f(plot))
-        gp.plot(plot[:, None]*35)
+        gp.plot(plot[:, None])
         #plt.scatter(x,y,marker="x",color="red")
         gp.log_marginal_likelihood()
         log_gp(gp)
@@ -156,13 +159,13 @@ def test_minimization_2D():
 def test_minimization_1D():
 
 
-    X = np.random.uniform(0,1,3)[:,None]
+    X = np.random.uniform(-10,20,3)[:,None]
 
 
     def f(X):
-        return -(1.4 - 3 * X) * np.sin(18 * X)
-        #return np.sin(X)
+        #return -(1.4 - 3 * X) * np.sin(18 * X)
         #return (6* X - 2)**2 * np.sin (12 * X - 4)
+        return X**1
         #return 4 * 100 * ((.9 / X) ** 12 - (.9 / X) ** 6)
 
     def noise(X):
@@ -171,14 +174,14 @@ def test_minimization_1D():
     Z = f(X)
 
     gp = GP(X, Z, RBF(gradient=False), normalize_y=True)
-    gp.set_boundary([[1e-4,0.5]])
+    #gp.set_boundary([[1e-4,0.5]])
     settings={"type":"NAIVE",
-              "ac_type":"UCB",
+              "ac_type":"EI",
               "n_search": 1000,
-              "boundaries": [[0,1.2]],
+              "boundaries": [[-100,100]],
               "epsilon": 0.01,
-              "iteration": 10,
-              "minimization":False,
+              "iteration": 4,
+              "minimization":True,
               "optimization":True,
               "n_restart": 10,
               "sampling":np.linspace}
@@ -320,7 +323,7 @@ def plot_test():
     cp=plt.contourf(grid[:,0].reshape(50,50),grid[:,1].reshape(50,50),f(grid).reshape(50,50))
     plt.show()
 a = time.time()
-test_Hartmann_6D()
+test_GP_1D(True)
 print("Finished: ", time.time() - a)
 
 
