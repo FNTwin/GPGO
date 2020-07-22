@@ -25,6 +25,10 @@ In this little package right now there are 3 ways to run an optimization task wi
 -DIRECT : optimize the Acquisition function by using the DIRECT optimizer (require DIRECT python package)
 <a href="https://ibb.co/GPSM0cm"><img src="https://i.ibb.co/f0wN24J/Figure-7.png" alt="Figure-7" border="0"></a>
 
+# INSTALL
+
+pip install GPGO
+
 # TODO
 
 -Tutorials and Examples
