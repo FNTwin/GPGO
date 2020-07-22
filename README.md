@@ -27,8 +27,10 @@ In this little package right now there are 3 ways to run an optimization task wi
 
 # INSTALL
 
+To install the package just use:
+'''
 pip install GPGO
-
+'''
 # TODO
 
 -Tutorials and Examples
